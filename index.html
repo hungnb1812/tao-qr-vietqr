@@ -81,6 +81,9 @@
         .print-tbl th, .print-tbl td { border: 1px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; }
         .print-tbl th { background: #fff; font-weight: bold; }
 
+        .header-logo-box { display: flex; align-items: center; gap: 10px; }
+        .header-logo-box img { max-height: 55px; width: auto; object-fit: contain; }
+
         .text-right { text-align: right !important; }
         .text-center { text-align: center !important; }
     </style>
@@ -118,6 +121,10 @@
         <div>
             <label>Ngày thu tiền:</label>
             <input type="date" id="inputNgayThu">
+        </div>
+        <div>
+            <label>Logo Quỹ (Chèn vào góc trái):</label>
+            <input type="file" id="logoFile" accept="image/*" style="padding: 4px;">
         </div>
     </div>
 
@@ -185,6 +192,8 @@
 <script>
     let globalMembersData = [];
     let globalGroupedData = []; 
+    let logoBase64 = ""; // Lưu ảnh Logo Quỹ
+
     let metaInfo = {
         tenDonVi: "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ",
         chiNhanh: "", 
@@ -201,6 +210,20 @@
         let month = String(dateObj.getMonth() + 1).padStart(2, '0');
         let day = String(dateObj.getDate()).padStart(2, '0');
         document.getElementById('inputNgayThu').value = `${year}-${month}-${day}`;
+    });
+
+    // Xử lý nạp logo khi chọn file
+    document.getElementById('logoFile').addEventListener('change', function(e) {
+        let file = e.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(evt) {
+                logoBase64 = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            logoBase64 = "";
+        }
     });
 
     function removeVietnameseTones(str) {
@@ -300,7 +323,7 @@
         });
     }
 
-    // Hàm tự động ngắt dòng từ chữ "Phòng"
+    // Ngắt dòng từ "Phòng"
     function formatChiNhanhHtml(text) {
         if (!text) return "";
         let cleanText = text.replace(/^Đơn vị[:\s]*/gi, '').trim();
@@ -579,6 +602,8 @@
         let mauSoChuan = metaInfo.mauSo.toLowerCase().includes("mẫu số") ? metaInfo.mauSo : `Mẫu số: ${metaInfo.mauSo}`;
         let chiNhanhDisplay = formatChiNhanhHtml(metaInfo.chiNhanh);
 
+        let logoHtml = logoBase64 ? `<img src="${logoBase64}" alt="Logo">` : '';
+
         globalGroupedData.forEach((mem) => {
             let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
             let docSo = docSoTien(tongNopThanhToan);
@@ -615,8 +640,13 @@
                     <table class="header-tbl">
                         <tr>
                             <td style="width: 75%;">
-                                <div style="font-weight: bold; font-size: 11pt;">${metaInfo.tenDonVi}</div>
-                                <div style="font-size: 10pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                                <div class="header-logo-box">
+                                    ${logoHtml}
+                                    <div>
+                                        <div style="font-weight: bold; font-size: 11pt;">${metaInfo.tenDonVi}</div>
+                                        <div style="font-size: 10pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                                    </div>
+                                </div>
                             </td>
                             <td style="width: 25%; text-align: right; vertical-align: top;">
                                 <div>${mauSoChuan}</div>
@@ -721,6 +751,8 @@
         let mauSoChuan = metaInfo.mauSo.toLowerCase().includes("mẫu số") ? metaInfo.mauSo : `Mẫu số: ${metaInfo.mauSo}`;
         let chiNhanhDisplay = formatChiNhanhHtml(metaInfo.chiNhanh);
 
+        let logoHtml = logoBase64 ? `<img src="${logoBase64}" alt="Logo">` : '';
+
         let rowsHtml = '';
         let sumDuNo = 0, sumSoDuTkbb = 0, sumVon = 0, sumTkbb = 0, sumLaiPhat = 0, sumNop = 0;
 
@@ -761,8 +793,13 @@
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 2px; border: none;">
                     <tr>
                         <td style="width: 75%; text-align: left; border: none; vertical-align: top;">
-                            <div style="font-weight: bold; font-size: 9pt;">${metaInfo.tenDonVi}</div>
-                            <div style="font-size: 8.5pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                            <div class="header-logo-box">
+                                ${logoHtml}
+                                <div>
+                                    <div style="font-weight: bold; font-size: 9pt;">${metaInfo.tenDonVi}</div>
+                                    <div style="font-size: 8.5pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                                </div>
+                            </div>
                         </td>
                         <td style="width: 25%; text-align: right; border: none; vertical-align: top;">
                             <div style="font-size: 8.5pt; font-weight: bold; border: 1px solid #000; display: inline-block; padding: 3px 8px;">${mauSoChuan}</div>
