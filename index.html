@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Thu Tiền & Tạo Bộ Mã VietQR</title>
+    <title>Quản Lý Thu Tiền & Tải Bộ Mã QR VietQR</title>
     <!-- Thư viện đọc Excel (SheetJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Thư viện nén file ZIP (JSZip) -->
@@ -32,6 +32,21 @@
         .folder-view { margin-top: 25px; background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 6px; display: none; }
         .qr-card { display: inline-block; border: 1px solid #ccc; padding: 12px; margin: 10px; text-align: center; border-radius: 6px; background: #fff; width: 180px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .qr-card img { width: 130px; height: 130px; border: 1px solid #eee; padding: 2px; }
+
+        .btn-single-download {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 6px 12px;
+            background: #0275d8;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: auto;
+            flex: none;
+        }
 
         .print-area { display: none; }
 
@@ -81,7 +96,7 @@
         </div>
         <div>
             <label>Nội dung chuyển khoản mẫu:</label>
-            <input type="text" id="contentPrefix" value="[Mã TV] [Họ tên] Thu tien" placeholder="VD: [Mã TV]_[Họ tên]vongoclaitk">
+            <input type="text" id="contentPrefix" value="[Mã TV]_[Họ tên] vongoclaitk" placeholder="VD: [Mã TV]_[Họ tên] vongoclaitk">
         </div>
         <div>
             <label>Họ và tên Nhóm trưởng:</label>
@@ -123,7 +138,7 @@
         <div class="btn-group">
             <button class="btn-blue" id="btnExportPdf" onclick="generatePrintPDF()">📥 Tải / Xuất File PDF Phiếu Thu</button>
             <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách mã QR</button>
-            <button class="btn-purple" onclick="downloadQRCodesAsZip()">🗂️ Tải File ZIp QR Theo Nhóm</button>
+            <button class="btn-purple" onclick="downloadQRCodesAsZip()">🗂️ Tải File ZIP QR Theo Nhóm</button>
             <button class="btn-zalo" onclick="sendZaloToGroupLeader()">📲 Gửi Zalo Nhóm Trưởng</button>
         </div>
 
@@ -148,7 +163,6 @@
         ngayThu: ""
     };
 
-    // Hàm bỏ dấu tiếng Việt để tạo nội dung chuyển khoản chuẩn ngân hàng không bị lỗi font
     function removeVietnameseTones(str) {
         if (!str) return "";
         str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
@@ -229,25 +243,6 @@
         return finalStr.charAt(0).toUpperCase() + finalStr.slice(1) + " đồng";
     }
 
-    async function getBase64FromImageUrl(url) {
-        return new Promise((resolve) => {
-            let img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = function () {
-                let canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
-                let ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL("image/png"));
-            };
-            img.onerror = function () {
-                resolve(url); 
-            };
-            img.src = url;
-        });
-    }
-
     document.getElementById('excelFile').addEventListener('change', async function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -324,9 +319,9 @@
                     
                     let duNoVonVay = parseFloat(row[3]) || 0;
                     let soDuTkbb   = parseFloat(row[4]) || 0;
-                    let vonGocLai  = parseFloat(row[10]) || 0;
-                    let tkbb       = parseFloat(row[11]) || 0;
-                    let tongCong   = vonGocLai + tkbb;
+                    let vonGocLai   = parseFloat(row[10]) || 0;
+                    let tkbb        = parseFloat(row[11]) || 0;
+                    let tongCong    = vonGocLai + tkbb;
 
                     if (tongCong > 0 || duNoVonVay > 0 || soDuTkbb > 0) {
                         let key = maTV !== '' ? maTV : hoTen;
@@ -363,21 +358,18 @@
                     let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
                     let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
 
-                    // Tự động thay thế [Mã TV] và [Họ tên] trong khung nội dung mẫu
                     let formattedAddInfo = contentPrefix
                         .replace(/\[Mã TV\]/gi, mem.maTV)
                         .replace(/\[Họ tên\]/gi, hoTenKhongDau)
                         .replace(/\[Họ và tên\]/gi, hoTenKhongDau);
 
-                    // Nếu nội dung mẫu không chứa từ khóa biến, tự bổ sung Mã TV vào đầu
                     if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mem.maTV.toLowerCase())) {
                         formattedAddInfo = `${mem.maTV} ${formattedAddInfo}`;
                     }
 
                     let addInfo = encodeURIComponent(formattedAddInfo.trim());
-                    let rawUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-compact2.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
-                    
-                    mem.qrBase64 = await getBase64FromImageUrl(rawUrl);
+                    // Lưu trực tiếp đường dẫn URL của VietQR
+                    mem.qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-compact2.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
                 }
             }
 
@@ -437,7 +429,7 @@
         globalMembersData.forEach((mem) => {
             let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
             let docSo = docSoTien(tongNopThanhToan);
-            let qrSrc = mem.qrBase64;
+            let qrSrc = mem.qrUrl;
 
             let rowsHtml = '';
             mem.loans.forEach((loan) => {
@@ -479,7 +471,7 @@
                         </tr>
                     </table>
 
-                    <div class="title-phieu">PHIẾU THU TIỀN GỐC LÃI VÀ TIẾT KIỆM</div>
+                    <div class="title-phieu">PHIẾU THU TIỀN VỐN, LÃI VÀ TIẾT KIỆM</div>
                     <div class="sub-date">Ngày thu: ${metaInfo.ngayThu}</div>
 
                     <div class="diaban-row">
@@ -528,7 +520,7 @@
                     </div>
 
                     <div style="text-align: center; margin-top: 15px;">
-                        <div style="font-size: 10pt; font-weight: bold; margin-bottom: 4px;">MÃ QR CHUYỂN KHOẢN</div>
+                        <div style="font-size: 10pt; font-weight: bold; margin-bottom: 4px;">MÃ QR CHUYỂN KHOẢN VIETQR</div>
                         <img src="${qrSrc}" alt="VietQR" style="width: 140px; height: 140px; border: 1px solid #ccc; padding: 4px; background: #fff;">
                         <div style="font-size: 9.5pt; font-style: italic; margin-top: 4px;">STK: ${document.getElementById('bankAcc').value.trim()} (${document.getElementById('bankId').value.trim()}) &nbsp;|&nbsp; Chủ TK: ${document.getElementById('bankAccName').value.trim()}</div>
                     </div>
@@ -541,6 +533,33 @@
         document.title = "";
         window.print();
         document.title = oldTitle;
+    }
+
+    // Tải ảnh đơn lẻ trực tiếp qua fetch blob (hoạt động hoàn hảo trên web)
+    async function downloadSingleQR(index) {
+        let mem = globalMembersData[index];
+        if (!mem || !mem.qrUrl) return;
+
+        try {
+            let response = await fetch(mem.qrUrl);
+            let blob = await response.blob();
+            let blobUrl = URL.createObjectURL(blob);
+
+            let sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
+            let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
+
+            let link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        } catch (e) {
+            console.error("Lỗi khi tải ảnh:", e);
+            alert("Không thể tải ảnh này, vui lòng thử lại!");
+        }
     }
 
     function renderFolderView() {
@@ -557,9 +576,9 @@
         let container = document.getElementById('qrCardsList');
         container.innerHTML = '';
 
-        globalMembersData.forEach(mem => {
+        globalMembersData.forEach((mem, idx) => {
             let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
-            let qrSrc = mem.qrBase64;
+            let qrSrc = mem.qrUrl;
 
             let card = document.createElement('div');
             card.className = 'qr-card';
@@ -568,7 +587,7 @@
                 <div style="font-weight: bold; font-size: 12px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mem.hoTen}">${mem.hoTen}</div>
                 <div style="font-size: 11px; color: #666;">Mã TV: ${mem.maTV} (${mem.loans.length} món)</div>
                 <div style="font-size: 12px; color: #d9534f; font-weight: bold; margin: 2px 0;">${tongNopThanhToan.toLocaleString('vi-VN')} đ</div>
-                <a href="${qrSrc}" download="QR_${mem.maTV}_${mem.hoTen}.png" style="display:inline-block; margin-top:4px; padding:3px 8px; background:#0275d8; color:#fff; text-decoration:none; border-radius:3px; font-size:11px;">Tải ảnh QR</a>
+                <button type="button" class="btn-single-download" onclick="downloadSingleQR(${idx})">Tải ảnh QR</button>
             `;
             container.appendChild(card);
         });
@@ -577,6 +596,7 @@
         document.getElementById('folderViewContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
+    // Tải toàn bộ ảnh QR nén vào file ZIP theo nhóm
     async function downloadQRCodesAsZip() {
         let bankAcc = document.getElementById('bankAcc').value.trim();
         if(!bankAcc) {
@@ -604,16 +624,17 @@
         let folderName = `${xaFolder}_${thonFolder}_${nhomFolder}`;
         let folder = zip.folder(folderName);
 
-        alert(`Hệ thống đang đóng gói ${globalMembersData.length} ảnh QR vào file ZIP. Vui lòng đợi trong giây lát...`);
+        alert(`Hệ thống đang tải và đóng gói ${globalMembersData.length} ảnh QR vào file ZIP. Vui lòng đợi trong giây lát...`);
 
         const sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
 
         for (let index = 0; index < globalMembersData.length; index++) {
             let mem = globalMembersData[index];
             try {
-                let base64Data = mem.qrBase64.split(',')[1];
+                let response = await fetch(mem.qrUrl);
+                let blob = await response.blob();
                 let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
-                folder.file(fileName, base64Data, {base64: true});
+                folder.file(fileName, blob);
             } catch (err) {
                 console.error(`Lỗi nén QR của thành viên ${mem.hoTen}:`, err);
             }
@@ -654,6 +675,5 @@
         window.open(zaloUrl, '_blank');
     }
 </script>
-
 </body>
 </html>
