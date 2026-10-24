@@ -6,8 +6,6 @@
     <title>Quản Lý Thu Tiền & Tải Bộ Mã QR VietQR</title>
     <!-- Thư viện đọc Excel (SheetJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Thư viện nén file ZIP (JSZip) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
@@ -138,7 +136,7 @@
         <div class="btn-group">
             <button class="btn-blue" id="btnExportPdf" onclick="generatePrintPDF()">📥 Tải / Xuất File PDF Phiếu Thu</button>
             <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách mã QR</button>
-            <button class="btn-purple" onclick="downloadQRCodesAsZip()">🗂️ Tải File ZIP QR Theo Nhóm</button>
+            <button class="btn-purple" onclick="downloadAllQRCodesDirectly()">📥 Tải Tất Cả Ảnh QR Theo Nhóm</button>
             <button class="btn-zalo" onclick="sendZaloToGroupLeader()">📲 Gửi Zalo Nhóm Trưởng</button>
         </div>
 
@@ -243,17 +241,13 @@
         return finalStr.charAt(0).toUpperCase() + finalStr.slice(1) + " đồng";
     }
 
-    // Hàm chuyển đổi hình ảnh từ VietQR thành Blob data bằng CORS Proxy
     async function fetchImageBlob(imageUrl) {
-        // Dùng proxy corsproxy.io để vượt qua rào cản CORS của VietQR trên GitHub Pages
         let proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(imageUrl);
         try {
             let response = await fetch(proxyUrl);
             if (!response.ok) throw new Error("HTTP error " + response.status);
             return await response.blob();
         } catch (e) {
-            console.warn("CORS Proxy 1 thất bại, thử Proxy dự phòng...", e);
-            // Phương án dự phòng 2 nếu proxy 1 bận
             let backupProxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(imageUrl);
             let res2 = await fetch(backupProxy);
             return await res2.blob();
@@ -551,7 +545,6 @@
         document.title = oldTitle;
     }
 
-    // Tải ảnh QR đơn lẻ hoạt động 100% bằng CORS Proxy
     async function downloadSingleQR(index) {
         let mem = globalMembersData[index];
         if (!mem || !mem.qrUrl) return;
@@ -573,7 +566,6 @@
             setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
         } catch (e) {
             console.error("Lỗi khi tải ảnh:", e);
-            // Phương án dự phòng mở ảnh ở tab mới nếu thiết bị chặn tải ngầm
             window.open(mem.qrUrl, '_blank');
         }
     }
@@ -612,8 +604,8 @@
         document.getElementById('folderViewContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Tải toàn bộ ảnh QR nén vào file ZIP theo nhóm
-    async function downloadQRCodesAsZip() {
+    // Tải tất cả ảnh QR của cả nhóm lần lượt tự động về máy không cần file ZIP
+    async function downloadAllQRCodesDirectly() {
         let bankAcc = document.getElementById('bankAcc').value.trim();
         if(!bankAcc) {
             alert("Vui lòng nhập số tài khoản ngân hàng!");
@@ -622,25 +614,11 @@
         }
 
         if (globalMembersData.length === 0) {
-            alert("Chưa có dữ liệu thành viên để nén!");
+            alert("Chưa có dữ liệu thành viên để tải!");
             return;
         }
 
-        if (typeof JSZip === 'undefined') {
-            alert("Thư viện JSZip chưa được tải. Vui lòng kiểm tra lại kết nối internet!");
-            return;
-        }
-
-        const zip = new JSZip();
-        
-        let xaFolder = metaInfo.xa ? metaInfo.xa.replace(/[\/\\?%*:|"<>]/g, '_') : "Xa";
-        let thonFolder = metaInfo.thon ? metaInfo.thon.replace(/[\/\\?%*:|"<>]/g, '_') : "Thon";
-        let nhomFolder = metaInfo.nhom ? metaInfo.nhom.replace(/[\/\\?%*:|"<>]/g, '_') : "Nhom";
-        
-        let folderName = `${xaFolder}_${thonFolder}_${nhomFolder}`;
-        let folder = zip.folder(folderName);
-
-        alert(`Hệ thống đang nén ${globalMembersData.length} mã QR vào file ZIP. Vui lòng chờ vài giây...`);
+        alert(`Hệ thống sẽ bắt đầu tải xuống ${globalMembersData.length} ảnh QR của nhóm về máy. Vui lòng giữ trình duyệt mở...`);
 
         const sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
 
@@ -648,25 +626,26 @@
             let mem = globalMembersData[index];
             try {
                 let blob = await fetchImageBlob(mem.qrUrl);
+                let blobUrl = URL.createObjectURL(blob);
                 let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
-                folder.file(fileName, blob);
+
+                let link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+                // Dừng khoảng 400ms giữa mỗi file để trình duyệt không bị chặn tải hàng loạt (pop-up blocker)
+                await new Promise(resolve => setTimeout(resolve, 400));
             } catch (err) {
-                console.error(`Lỗi nén QR của thành viên ${mem.hoTen}:`, err);
+                console.error(`Lỗi tải QR của thành viên ${mem.hoTen}:`, err);
             }
         }
 
-        zip.generateAsync({type:"blob"}).then(function(content) {
-            let link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `${folderName}_DanhSachQR.zip`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            alert("Đã tải xuống thành công bộ mã QR dưới dạng file nén ZIP theo nhóm!");
-        }).catch(function(err) {
-            console.error("Lỗi khi tạo file ZIP:", err);
-            alert("Có lỗi xảy ra trong quá trình tạo file ZIP.");
-        });
+        alert("Đã hoàn tất tải xuống tất cả ảnh QR của nhóm!");
     }
 
     function sendZaloToGroupLeader() {
