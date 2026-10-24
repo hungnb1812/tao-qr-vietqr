@@ -243,6 +243,23 @@
         return finalStr.charAt(0).toUpperCase() + finalStr.slice(1) + " đồng";
     }
 
+    // Hàm chuyển đổi hình ảnh từ VietQR thành Blob data bằng CORS Proxy
+    async function fetchImageBlob(imageUrl) {
+        // Dùng proxy corsproxy.io để vượt qua rào cản CORS của VietQR trên GitHub Pages
+        let proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(imageUrl);
+        try {
+            let response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error("HTTP error " + response.status);
+            return await response.blob();
+        } catch (e) {
+            console.warn("CORS Proxy 1 thất bại, thử Proxy dự phòng...", e);
+            // Phương án dự phòng 2 nếu proxy 1 bận
+            let backupProxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(imageUrl);
+            let res2 = await fetch(backupProxy);
+            return await res2.blob();
+        }
+    }
+
     document.getElementById('excelFile').addEventListener('change', async function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -534,43 +551,29 @@
         document.title = oldTitle;
     }
 
-    // Hàm chuyển ảnh thẻ <img> sang canvas để tải đơn lẻ tránh lỗi CORS
-    function downloadSingleQR(index) {
+    // Tải ảnh QR đơn lẻ hoạt động 100% bằng CORS Proxy
+    async function downloadSingleQR(index) {
         let mem = globalMembersData[index];
         if (!mem || !mem.qrUrl) return;
 
-        let cards = document.querySelectorAll('.qr-card img');
-        let targetImg = cards[index];
-        if (!targetImg) return;
-
         try {
-            let canvas = document.createElement('canvas');
-            canvas.width = targetImg.naturalWidth || 150;
-            canvas.height = targetImg.naturalHeight || 150;
-            let ctx = canvas.getContext('2d');
-            ctx.drawImage(targetImg, 0, 0);
+            let blob = await fetchImageBlob(mem.qrUrl);
+            let blobUrl = URL.createObjectURL(blob);
 
-            canvas.toBlob(function(blob) {
-                if (!blob) {
-                    alert("Không thể tạo dữ liệu ảnh, vui lòng thử lại!");
-                    return;
-                }
-                let blobUrl = URL.createObjectURL(blob);
-                let sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
-                let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
+            let sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
+            let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
 
-                let link = document.createElement('a');
-                link.href = blobUrl;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            let link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-            }, 'image/png');
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
         } catch (e) {
-            console.error("Lỗi tải ảnh:", e);
-            // Phương án dự phòng mở trực tiếp ảnh trong tab mới nếu bị chặn canvas
+            console.error("Lỗi khi tải ảnh:", e);
+            // Phương án dự phòng mở ảnh ở tab mới nếu thiết bị chặn tải ngầm
             window.open(mem.qrUrl, '_blank');
         }
     }
@@ -596,7 +599,7 @@
             let card = document.createElement('div');
             card.className = 'qr-card';
             card.innerHTML = `
-                <img src="${qrSrc}" alt="QR" crossorigin="anonymous"><br>
+                <img src="${qrSrc}" alt="QR"><br>
                 <div style="font-weight: bold; font-size: 12px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mem.hoTen}">${mem.hoTen}</div>
                 <div style="font-size: 11px; color: #666;">Mã TV: ${mem.maTV} (${mem.loans.length} món)</div>
                 <div style="font-size: 12px; color: #d9534f; font-weight: bold; margin: 2px 0;">${tongNopThanhToan.toLocaleString('vi-VN')} đ</div>
@@ -609,7 +612,7 @@
         document.getElementById('folderViewContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Tải toàn bộ ảnh QR nén vào file ZIP trực tiếp từ các thẻ ảnh đã render
+    // Tải toàn bộ ảnh QR nén vào file ZIP theo nhóm
     async function downloadQRCodesAsZip() {
         let bankAcc = document.getElementById('bankAcc').value.trim();
         if(!bankAcc) {
@@ -621,12 +624,6 @@
         if (globalMembersData.length === 0) {
             alert("Chưa có dữ liệu thành viên để nén!");
             return;
-        }
-
-        // Tự động mở khung xem danh sách mã QR nếu người dùng chưa bấm nút xem trước
-        let folderContainer = document.getElementById('folderViewContainer');
-        if (folderContainer.style.display !== 'block') {
-            renderFolderView();
         }
 
         if (typeof JSZip === 'undefined') {
@@ -643,32 +640,18 @@
         let folderName = `${xaFolder}_${thonFolder}_${nhomFolder}`;
         let folder = zip.folder(folderName);
 
-        alert(`Hệ thống đang đóng gói ${globalMembersData.length} ảnh QR vào file ZIP. Vui lòng đợi trong giây lát...`);
+        alert(`Hệ thống đang nén ${globalMembersData.length} mã QR vào file ZIP. Vui lòng chờ vài giây...`);
 
         const sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
-        let cardImgs = document.querySelectorAll('.qr-card img');
 
         for (let index = 0; index < globalMembersData.length; index++) {
             let mem = globalMembersData[index];
-            let targetImg = cardImgs[index];
-            
-            if (targetImg) {
-                try {
-                    let canvas = document.createElement('canvas');
-                    canvas.width = targetImg.naturalWidth || 150;
-                    canvas.height = targetImg.naturalHeight || 150;
-                    let ctx = canvas.getContext('2d');
-                    ctx.drawImage(targetImg, 0, 0);
-
-                    // Chuyển canvas thành blob để nén vào zip chuẩn xác
-                    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                    if (blob) {
-                        let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
-                        folder.file(fileName, blob);
-                    }
-                } catch (err) {
-                    console.error(`Lỗi nén QR của thành viên ${mem.hoTen}:`, err);
-                }
+            try {
+                let blob = await fetchImageBlob(mem.qrUrl);
+                let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
+                folder.file(fileName, blob);
+            } catch (err) {
+                console.error(`Lỗi nén QR của thành viên ${mem.hoTen}:`, err);
             }
         }
 
