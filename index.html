@@ -368,7 +368,6 @@
                     }
 
                     let addInfo = encodeURIComponent(formattedAddInfo.trim());
-                    // Lưu trực tiếp đường dẫn URL của VietQR
                     mem.qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-compact2.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
                 }
             }
@@ -535,30 +534,44 @@
         document.title = oldTitle;
     }
 
-    // Tải ảnh đơn lẻ trực tiếp qua fetch blob (hoạt động hoàn hảo trên web)
-    async function downloadSingleQR(index) {
+    // Hàm chuyển ảnh thẻ <img> sang canvas để tải đơn lẻ tránh lỗi CORS
+    function downloadSingleQR(index) {
         let mem = globalMembersData[index];
         if (!mem || !mem.qrUrl) return;
 
+        let cards = document.querySelectorAll('.qr-card img');
+        let targetImg = cards[index];
+        if (!targetImg) return;
+
         try {
-            let response = await fetch(mem.qrUrl);
-            let blob = await response.blob();
-            let blobUrl = URL.createObjectURL(blob);
+            let canvas = document.createElement('canvas');
+            canvas.width = targetImg.naturalWidth || 150;
+            canvas.height = targetImg.naturalHeight || 150;
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(targetImg, 0, 0);
 
-            let sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
-            let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
+            canvas.toBlob(function(blob) {
+                if (!blob) {
+                    alert("Không thể tạo dữ liệu ảnh, vui lòng thử lại!");
+                    return;
+                }
+                let blobUrl = URL.createObjectURL(blob);
+                let sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
+                let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
 
-            let link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+                let link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            }, 'image/png');
         } catch (e) {
-            console.error("Lỗi khi tải ảnh:", e);
-            alert("Không thể tải ảnh này, vui lòng thử lại!");
+            console.error("Lỗi tải ảnh:", e);
+            // Phương án dự phòng mở trực tiếp ảnh trong tab mới nếu bị chặn canvas
+            window.open(mem.qrUrl, '_blank');
         }
     }
 
@@ -583,7 +596,7 @@
             let card = document.createElement('div');
             card.className = 'qr-card';
             card.innerHTML = `
-                <img src="${qrSrc}" alt="QR"><br>
+                <img src="${qrSrc}" alt="QR" crossorigin="anonymous"><br>
                 <div style="font-weight: bold; font-size: 12px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mem.hoTen}">${mem.hoTen}</div>
                 <div style="font-size: 11px; color: #666;">Mã TV: ${mem.maTV} (${mem.loans.length} món)</div>
                 <div style="font-size: 12px; color: #d9534f; font-weight: bold; margin: 2px 0;">${tongNopThanhToan.toLocaleString('vi-VN')} đ</div>
@@ -596,7 +609,7 @@
         document.getElementById('folderViewContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Tải toàn bộ ảnh QR nén vào file ZIP theo nhóm
+    // Tải toàn bộ ảnh QR nén vào file ZIP trực tiếp từ các thẻ ảnh đã render
     async function downloadQRCodesAsZip() {
         let bankAcc = document.getElementById('bankAcc').value.trim();
         if(!bankAcc) {
@@ -608,6 +621,12 @@
         if (globalMembersData.length === 0) {
             alert("Chưa có dữ liệu thành viên để nén!");
             return;
+        }
+
+        // Tự động mở khung xem danh sách mã QR nếu người dùng chưa bấm nút xem trước
+        let folderContainer = document.getElementById('folderViewContainer');
+        if (folderContainer.style.display !== 'block') {
+            renderFolderView();
         }
 
         if (typeof JSZip === 'undefined') {
@@ -624,19 +643,32 @@
         let folderName = `${xaFolder}_${thonFolder}_${nhomFolder}`;
         let folder = zip.folder(folderName);
 
-        alert(`Hệ thống đang tải và đóng gói ${globalMembersData.length} ảnh QR vào file ZIP. Vui lòng đợi trong giây lát...`);
+        alert(`Hệ thống đang đóng gói ${globalMembersData.length} ảnh QR vào file ZIP. Vui lòng đợi trong giây lát...`);
 
         const sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
+        let cardImgs = document.querySelectorAll('.qr-card img');
 
         for (let index = 0; index < globalMembersData.length; index++) {
             let mem = globalMembersData[index];
-            try {
-                let response = await fetch(mem.qrUrl);
-                let blob = await response.blob();
-                let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
-                folder.file(fileName, blob);
-            } catch (err) {
-                console.error(`Lỗi nén QR của thành viên ${mem.hoTen}:`, err);
+            let targetImg = cardImgs[index];
+            
+            if (targetImg) {
+                try {
+                    let canvas = document.createElement('canvas');
+                    canvas.width = targetImg.naturalWidth || 150;
+                    canvas.height = targetImg.naturalHeight || 150;
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(targetImg, 0, 0);
+
+                    // Chuyển canvas thành blob để nén vào zip chuẩn xác
+                    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    if (blob) {
+                        let fileName = `QR_${mem.maTV}_${sanitize(mem.hoTen)}.png`;
+                        folder.file(fileName, blob);
+                    }
+                } catch (err) {
+                    console.error(`Lỗi nén QR của thành viên ${mem.hoTen}:`, err);
+                }
             }
         }
 
