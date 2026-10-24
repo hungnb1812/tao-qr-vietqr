@@ -11,7 +11,7 @@
     
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        .container { max-width: 1050px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 1250px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h2 { color: #0275d8; text-align: center; margin-bottom: 25px; }
         .upload-section { border: 2px dashed #0275d8; padding: 25px; text-align: center; border-radius: 6px; background: #f8fbff; margin-bottom: 20px; }
         .config-box { background: #f1f1f1; padding: 20px; border-radius: 6px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -30,8 +30,9 @@
         button:hover { opacity: 0.9; }
         
         .folder-view { margin-top: 25px; background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 6px; display: none; }
-        .qr-card { display: inline-block; border: 1px solid #ccc; padding: 12px; margin: 10px; text-align: center; border-radius: 6px; background: #fff; width: 180px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .qr-card img { width: 130px; height: 130px; border: 1px solid #eee; padding: 2px; }
+        /* Tinh chỉnh thẻ vừa khít 4 thẻ trên một hàng */
+        .qr-card { display: inline-block; border: 1px solid #ccc; padding: 10px; margin: 6px; text-align: center; border-radius: 6px; background: #fff; width: 270px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .qr-card img { width: 100%; height: 270px; border: 1px solid #eee; padding: 2px; object-fit: contain; background: #fff; }
 
         .print-area { display: none; }
 
@@ -91,6 +92,10 @@
             <label>Số điện thoại Zalo Nhóm trưởng:</label>
             <input type="text" id="groupLeaderPhone" value="" placeholder="Ví dụ: 0912345678">
         </div>
+        <div>
+            <label>Ngày thu tiền:</label>
+            <input type="date" id="inputNgayThu">
+        </div>
     </div>
 
     <div class="upload-section">
@@ -129,7 +134,7 @@
 
         <div class="folder-view" id="folderViewContainer">
             <h3 id="folderTitle" style="color: #0275d8; margin-top: 0;"></h3>
-            <p style="font-size: 13px; color: #555;">Danh sách mã QR đã sẵn sàng để tải xuống hoặc in ấn:</p>
+            <p style="font-size: 13px; color: #555;">Danh sách mã QR đã sẵn sàng để tải xuống hoặc xem:</p>
             <div id="qrCardsList"></div>
         </div>
     </div>
@@ -148,7 +153,14 @@
         ngayThu: ""
     };
 
-    // Hàm bỏ dấu tiếng Việt để tạo nội dung chuyển khoản chuẩn ngân hàng không bị lỗi font
+    window.addEventListener('DOMContentLoaded', () => {
+        let dateObj = new Date();
+        let year = dateObj.getFullYear();
+        let month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        let day = String(dateObj.getDate()).padStart(2, '0');
+        document.getElementById('inputNgayThu').value = `${year}-${month}-${day}`;
+    });
+
     function removeVietnameseTones(str) {
         if (!str) return "";
         str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
@@ -308,11 +320,6 @@
                 metaInfo.nhom = sheetName.trim();
             }
 
-            if(!metaInfo.ngayThu) {
-                let now = new Date();
-                metaInfo.ngayThu = `${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
-            }
-
             let membersMap = new Map();
 
             for (let i = 0; i < rawData.length; i++) {
@@ -363,21 +370,21 @@
                     let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
                     let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
 
-                    // Tự động thay thế [Mã TV] và [Họ tên] trong khung nội dung mẫu
                     let formattedAddInfo = contentPrefix
                         .replace(/\[Mã TV\]/gi, mem.maTV)
                         .replace(/\[Họ tên\]/gi, hoTenKhongDau)
                         .replace(/\[Họ và tên\]/gi, hoTenKhongDau);
 
-                    // Nếu nội dung mẫu không chứa từ khóa biến, tự bổ sung Mã TV vào đầu
                     if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mem.maTV.toLowerCase())) {
                         formattedAddInfo = `${mem.maTV} ${formattedAddInfo}`;
                     }
 
                     let addInfo = encodeURIComponent(formattedAddInfo.trim());
-                    let rawUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-compact2.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
                     
-                    mem.qrBase64 = await getBase64FromImageUrl(rawUrl);
+                    // Tạo ảnh QR mẫu chuẩn (print) để in/tải xuống
+                    let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
+                    
+                    mem.qrBase64 = await getBase64FromImageUrl(printUrl);
                 }
             }
 
@@ -395,12 +402,26 @@
         tbody.innerHTML = '';
         document.getElementById('rowCount').innerText = data.length;
         
+        let sumDuNo = 0;
+        let sumSoDuTkbb = 0;
+        let sumVon = 0;
+        let sumTkbb = 0;
+        let sumNop = 0;
+        let totalMonVay = 0;
+
         data.forEach((mem) => {
             let tongDuNo = mem.loans.reduce((sum, l) => sum + l.duNoVonVay, 0);
             let tongSoDuTkbb = mem.loans.reduce((sum, l) => sum + l.soDuTkbb, 0);
             let tongVon = mem.loans.reduce((sum, l) => sum + l.vonGocLai, 0);
             let tongTkbb = mem.loans.reduce((sum, l) => sum + l.tkbb, 0);
             let tongNop = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
+
+            sumDuNo += tongDuNo;
+            sumSoDuTkbb += tongSoDuTkbb;
+            sumVon += tongVon;
+            sumTkbb += tongTkbb;
+            sumNop += tongNop;
+            totalMonVay += mem.loans.length;
 
             let tr = `<tr>
                 <td class="text-center">${mem.stt}</td>
@@ -415,6 +436,17 @@
             </tr>`;
             tbody.innerHTML += tr;
         });
+
+        let totalTr = `<tr style="font-weight: bold; background-color: #f1f1f1;">
+            <td colspan="3" class="text-center">TỔNG CỘNG (${data.length} thành viên)</td>
+            <td class="text-center">${totalMonVay} món</td>
+            <td class="text-right">${sumDuNo.toLocaleString('vi-VN')}</td>
+            <td class="text-right">${sumSoDuTkbb.toLocaleString('vi-VN')}</td>
+            <td class="text-right">${sumVon.toLocaleString('vi-VN')}</td>
+            <td class="text-right">${sumTkbb.toLocaleString('vi-VN')}</td>
+            <td class="text-right" style="color: #d9534f;">${sumNop.toLocaleString('vi-VN')}</td>
+        </tr>`;
+        tbody.innerHTML += totalTr;
         
         document.getElementById('preview-section').style.display = 'block';
     }
@@ -423,6 +455,14 @@
         let bankAcc = document.getElementById('bankAcc').value.trim();
         let groupLeaderName = document.getElementById('groupLeaderName').value.trim();
         
+        let rawDateVal = document.getElementById('inputNgayThu').value;
+        if (rawDateVal) {
+            let parts = rawDateVal.split('-');
+            if (parts.length === 3) {
+                metaInfo.ngayThu = `${parseInt(parts[2])} tháng ${parseInt(parts[1])} năm ${parts[0]}`;
+            }
+        }
+
         if(!bankAcc) {
             alert("Vui lòng nhập số tài khoản ngân hàng nhận tiền!");
             document.getElementById('bankAcc').focus();
@@ -529,8 +569,7 @@
 
                     <div style="text-align: center; margin-top: 15px;">
                         <div style="font-size: 10pt; font-weight: bold; margin-bottom: 4px;">MÃ QR CHUYỂN KHOẢN VIETQR</div>
-                        <img src="${qrSrc}" alt="VietQR" style="width: 140px; height: 140px; border: 1px solid #ccc; padding: 4px; background: #fff;">
-                        <div style="font-size: 9.5pt; font-style: italic; margin-top: 4px;">STK: ${document.getElementById('bankAcc').value.trim()} (${document.getElementById('bankId').value.trim()}) &nbsp;|&nbsp; Chủ TK: ${document.getElementById('bankAccName').value.trim()}</div>
+                        <img src="${qrSrc}" alt="VietQR" style="width: 220px; height: 250px; border: 1px solid #ccc; padding: 4px; background: #fff; object-fit: contain;">
                     </div>
                 </div>
             `;
@@ -563,12 +602,13 @@
 
             let card = document.createElement('div');
             card.className = 'qr-card';
+            // Giữ nguyên giao diện trực quan cũ (có Tên, Mã TV, Số món vay, Số tiền màu đỏ)
             card.innerHTML = `
                 <img src="${qrSrc}" alt="QR"><br>
-                <div style="font-weight: bold; font-size: 12px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mem.hoTen}">${mem.hoTen}</div>
-                <div style="font-size: 11px; color: #666;">Mã TV: ${mem.maTV} (${mem.loans.length} món)</div>
-                <div style="font-size: 12px; color: #d9534f; font-weight: bold; margin: 2px 0;">${tongNopThanhToan.toLocaleString('vi-VN')} đ</div>
-                <a href="${qrSrc}" download="QR_${mem.maTV}_${mem.hoTen}.png" style="display:inline-block; margin-top:4px; padding:3px 8px; background:#0275d8; color:#fff; text-decoration:none; border-radius:3px; font-size:11px;">Tải ảnh QR</a>
+                <div style="font-weight: bold; font-size: 13px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mem.hoTen}">${mem.hoTen}</div>
+                <div style="font-size: 11px; color: #666; margin-top: 2px;">Mã TV: ${mem.maTV} (${mem.loans.length} món)</div>
+                <div style="font-size: 13px; color: #d9534f; font-weight: bold; margin: 4px 0;">${tongNopThanhToan.toLocaleString('vi-VN')} đ</div>
+                <a href="${qrSrc}" download="QR_${mem.maTV}_${mem.hoTen}.png" style="display:inline-block; margin-top:4px; padding:5px 12px; background:#0275d8; color:#fff; text-decoration:none; border-radius:4px; font-size:12px; font-weight:bold;">Tải ảnh QR</a>
             `;
             container.appendChild(card);
         });
@@ -604,7 +644,7 @@
         let folderName = `${xaFolder}_${thonFolder}_${nhomFolder}`;
         let folder = zip.folder(folderName);
 
-        alert(`Hệ thống đang đóng gói ${globalMembersData.length} ảnh QR vào file ZIP. Vui lòng đợi trong giây lát...`);
+        alert(`Hệ thống đang đóng gói ${globalMembersData.length} ảnh QR chuẩn mẫu vào file ZIP. Vui lòng đợi trong giây lát...`);
 
         const sanitize = (str) => str.replace(/[\/\\?%*:|"<>]/g, '_');
 
@@ -626,7 +666,7 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            alert("Đã tải xuống thành công bộ mã QR dưới dạng file nén ZIP theo nhóm!");
+            alert("Đã tải xuống thành công bộ mã QR chuẩn mẫu dưới dạng file nén ZIP theo nhóm!");
         }).catch(function(err) {
             console.error("Lỗi khi tạo file ZIP:", err);
             alert("Có lỗi xảy ra trong quá trình tạo file ZIP.");
