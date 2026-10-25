@@ -14,7 +14,7 @@
         .upload-section { border: 2px dashed #0275d8; padding: 25px; text-align: center; border-radius: 6px; background: #f8fbff; margin-bottom: 20px; }
         .config-box { background: #f1f1f1; padding: 20px; border-radius: 6px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .config-box label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
-        .config-box input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .config-box input, .config-box select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
         
         table.preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
         table.preview-table th, table.preview-table td { border: 1px solid #ddd; padding: 8px 6px; text-align: left; vertical-align: middle; }
@@ -44,7 +44,6 @@
 
         .print-area { display: none; }
 
-        /* Cấu hình lề trang in và ẩn Header/Footer mặc định của trình duyệt */
         @page {
             margin: 5mm;
         }
@@ -91,7 +90,7 @@
 <body>
 
 <div class="container" id="input-screen">
-    <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ MÃ QR VIETQR</h2>
+    <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ MÃ QR VIETQR (ĐA NHÓM / ĐA SHEET)</h2>
     
     <div class="config-box">
         <div>
@@ -100,11 +99,17 @@
         </div>
         <div>
             <label>Số Tài Khoản Nhận Tiền:</label>
-            <input type="text" id="bankAcc" value="" placeholder="Nhập số tài khoản ngân hàng">
+            <select id="bankAcc" onchange="checkCustomAccount(this)">
+                <option value="7373686823456">7373686823456 (Tài khoản chính)</option>
+                <option value="1234567890123">1234567890123 (Tài khoản phụ 1)</option>
+                <option value="9876543210987">9876543210987 (Tài khoản phụ 2)</option>
+                <option value="CUSTOM">➕ Nhập số tài khoản khác...</option>
+            </select>
+            <input type="text" id="customBankAcc" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
         </div>
         <div>
             <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
-            <input type="text" id="bankAccName" value="QUY HO TRO PHU NU PT TINH QUANG TRI" placeholder="Tên không dấu">
+            <input type="text" id="bankAccName" value="QUY HO TRO PHU NU PT TINH QUANG BINH" placeholder="Tên không dấu">
         </div>
         <div>
             <label>Nội dung chuyển khoản mẫu:</label>
@@ -129,30 +134,31 @@
     </div>
 
     <div class="upload-section">
-        <h3>1. Chọn file Excel bảng kê thu tiền (.xls / .xlsx)</h3>
+        <h3>1. Chọn file Excel bảng kê nhiều nhóm/sheet (.xls / .xlsx)</h3>
         <input type="file" id="excelFile" accept=".xlsx, .xls" style="margin-top: 10px;">
-        <p style="font-size: 12px; color: #666; margin-top: 5px;">Hệ thống tự động đọc Đơn vị, Mẫu số, Ngày thu, Xã, Thôn, Nhóm từ bảng kê Excel.</p>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">Hệ thống sẽ tự động quét toàn bộ các Sheet (Nhóm), tự động nhận diện tên chương trình và chi nhánh chính xác từ file.</p>
     </div>
 
     <div id="preview-section" style="display:none;">
-        <h3>2. Xem trước danh sách thu tiền theo mẫu bảng kê (<span id="rowCount">0</span> dòng dữ liệu)</h3>
+        <h3>2. Xem trước tổng hợp toàn bộ thành viên (<span id="rowCount">0</span> thành viên từ tất cả các nhóm)</h3>
         <div style="max-height: 380px; overflow-y: auto;">
             <table class="preview-table" id="previewTable">
                 <thead>
                     <tr>
                         <th rowspan="2" style="width: 3%;">STT</th>
+                        <th rowspan="2" style="width: 10%;">Tên Nhóm / Sheet</th>
                         <th rowspan="2" style="width: 7%;">Mã TV</th>
-                        <th rowspan="2" style="width: 14%;">Họ và Tên</th>
-                        <th colspan="2" style="width: 20%;">Tình hình tiết kiệm - vay vốn</th>
-                        <th colspan="3" style="width: 20%;">Kế hoạch</th>
+                        <th rowspan="2" style="width: 13%;">Họ và Tên</th>
+                        <th colspan="2" style="width: 18%;">Tình hình tiết kiệm - vay vốn</th>
+                        <th colspan="3" style="width: 18%;">Kế hoạch</th>
                         <th rowspan="2" style="width: 8%;">Tổng nộp (VNĐ)</th>
-                        <th rowspan="2" style="width: 6%;">Mã QR</th>
+                        <th rowspan="2" style="width: 7%;">Mã QR</th>
                     </tr>
                     <tr>
-                        <th style="width: 10%;">Dư nợ vốn vay (Gốc + lãi)</th>
-                        <th style="width: 10%;">Số dư gốc TKBB hàng tháng</th>
-                        <th style="width: 7%;">Vốn (gốc+lãi)</th>
-                        <th style="width: 7%;">TKBB hàng tháng</th>
+                        <th style="width: 9%;">Dư nợ vốn vay (Gốc + lãi)</th>
+                        <th style="width: 9%;">Số dư gốc TKBB hàng tháng</th>
+                        <th style="width: 6%;">Vốn (gốc+lãi)</th>
+                        <th style="width: 6%;">TKBB hàng tháng</th>
                         <th style="width: 6%;">Lãi phạt</th>
                     </tr>
                 </thead>
@@ -161,15 +167,15 @@
         </div>
         
         <div class="btn-group">
-            <button class="btn-blue" onclick="generatePrintPDF()">📥 Tải / Xuất Phiếu Thu PDF (Từng người)</button>
-            <button class="btn-purple" onclick="generatePrintBangKe()">🖨️ In Bảng Kê Thu Tiền Kèm Mã QR</button>
-            <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách thẻ QR</button>
+            <button class="btn-blue" onclick="generatePrintPDF()">📥 Tải / Xuất Phiếu Thu PDF (Từng người có phát sinh)</button>
+            <button class="btn-purple" onclick="generatePrintBangKe()">🖨️ In Bảng Kê Từng Nhóm / Toàn Thôn</button>
+            <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách thẻ QR toàn thôn</button>
             <button class="btn-zalo" onclick="sendZaloToGroupLeader()">📲 Gửi Zalo Nhóm Trưởng</button>
         </div>
 
         <div class="folder-view" id="folderViewContainer">
             <h3 id="folderTitle" style="color: #0275d8; margin-top: 0;"></h3>
-            <p style="font-size: 13px; color: #555;">Danh sách mã QR đã sẵn sàng (Bấm vào ảnh để phóng to xem chi tiết):</p>
+            <p style="font-size: 13px; color: #555;">Danh sách mã QR toàn thôn (Chỉ hiển thị thành viên có phát sinh tiền nộp):</p>
             <div id="qrCardsList"></div>
         </div>
     </div>
@@ -192,16 +198,16 @@
 <script>
     let globalMembersData = [];
     let globalGroupedData = []; 
-    let logoBase64 = ""; // Lưu ảnh Logo Quỹ
+    let logoBase64 = "";
 
     let metaInfo = {
-        tenDonVi: "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ",
+        tenDonVi: "",
         chiNhanh: "", 
-        mauSo: "13/TCVM",
+        mauSo: "",
         xa: "",
         thon: "",
-        nhom: "",
-        ngayThu: ""
+        ngayThu: "",
+        chuKyCuoi: "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ"
     };
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -212,7 +218,25 @@
         document.getElementById('inputNgayThu').value = `${year}-${month}-${day}`;
     });
 
-    // Xử lý nạp logo khi chọn file
+    function checkCustomAccount(selectObj) {
+        let customInput = document.getElementById('customBankAcc');
+        if (selectObj.value === 'CUSTOM') {
+            customInput.style.display = 'block';
+            customInput.focus();
+        } else {
+            customInput.style.display = 'none';
+            customInput.value = '';
+        }
+    }
+
+    function getSelectedBankAccount() {
+        let selectVal = document.getElementById('bankAcc').value;
+        if (selectVal === 'CUSTOM') {
+            return document.getElementById('customBankAcc').value.trim();
+        }
+        return selectVal.trim();
+    }
+
     document.getElementById('logoFile').addEventListener('change', function(e) {
         let file = e.target.files[0];
         if (file) {
@@ -323,7 +347,6 @@
         });
     }
 
-    // Ngắt dòng từ "Phòng"
     function formatChiNhanhHtml(text) {
         if (!text) return "";
         let cleanText = text.replace(/^Đơn vị[:\s]*/gi, '').trim();
@@ -336,6 +359,7 @@
         return cleanText;
     }
 
+    // ĐỌC TẤT CẢ CÁC SHEET VÀ TRỐC TÁCH CHÍNH XÁC TÊN ĐƠN VỊ, CHI NHÁNH TỪ FILE EXCEL
     document.getElementById('excelFile').addEventListener('change', async function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -345,181 +369,201 @@
             let data = new Uint8Array(e.target.result);
             let workbook = XLSX.read(data, {type: 'array'});
             
-            metaInfo.nhom = ""; metaInfo.xa = ""; metaInfo.thon = ""; metaInfo.ngayThu = "";
-            metaInfo.tenDonVi = "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ";
-            metaInfo.chiNhanh = ""; metaInfo.mauSo = "";
+            metaInfo = { tenDonVi: "", chiNhanh: "", mauSo: "", xa: "", thon: "", ngayThu: "", chuKyCuoi: "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ" };
 
+            // 1. Quét dữ liệu từ Sheet ThamSo nếu có (để lấy thông tin chuẩn)
+            let rawThamSoList = [];
             if (workbook.SheetNames.includes('ThamSo')) {
                 let wsThamSo = workbook.Sheets['ThamSo'];
                 let dataThamSo = XLSX.utils.sheet_to_json(wsThamSo);
                 dataThamSo.forEach(row => {
                     let maTS = String(row['Mã tham số'] || '').trim();
                     let giaTri = String(row['Giá trị'] || '').trim();
-                    if (maTS === 'P_TEN_CHI_NHANH' && giaTri) metaInfo.chiNhanh = giaTri;
-                    if (maTS === 'P_XA' && giaTri) metaInfo.xa = giaTri;
-                    if (maTS === 'P_CUM' && giaTri) metaInfo.thon = giaTri;
-                    if (maTS === 'P_NHOM' && giaTri) metaInfo.nhom = giaTri;
-                    if ((maTS === 'P_NGAY_THU' || maTS.toLowerCase().includes('ngay')) && giaTri) metaInfo.ngayThu = giaTri;
+                    rawThamSoList.push({maTS, giaTri});
                 });
             }
 
-            let sheetName = workbook.SheetNames.length > 1 ? workbook.SheetNames[1] : workbook.SheetNames[0];
-            let worksheet = workbook.Sheets[sheetName];
-            let rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+            // 2. Quét thông tin từ Sheet báo cáo đầu tiên
+            let firstSheetName = workbook.SheetNames.length > 1 && workbook.SheetNames[0] === 'ThamSo' ? workbook.SheetNames[1] : workbook.SheetNames[0];
+            let firstWs = workbook.Sheets[firstSheetName];
+            let firstRawData = XLSX.utils.sheet_to_json(firstWs, {header: 1});
 
-            for (let i = 0; i < Math.min(10, rawData.length); i++) {
-                let row = rawData[i];
+            for (let i = 0; i < Math.min(10, firstRawData.length); i++) {
+                let row = firstRawData[i];
                 if (!row) continue;
-                
                 row.forEach(cell => {
                     if (cell && typeof cell === 'string') {
                         let text = cell.trim();
-                        if (text.toLowerCase().includes("mẫu số")) {
+                        let lower = text.toLowerCase();
+                        if (lower.includes("mẫu số")) {
                             let parts = text.split(":");
-                            if (parts.length > 1) {
-                                metaInfo.mauSo = parts[1].trim();
-                            } else {
-                                metaInfo.mauSo = text;
-                            }
+                            metaInfo.mauSo = parts.length > 1 ? parts[1].trim() : text;
                         }
-                        
-                        let lowerText = text.toLowerCase();
-                        if (lowerText.includes("chương trình") || lowerText.includes("phòng nghiệp vụ") || lowerText.includes("đơn vị:") || lowerText.includes("chi nhánh")) {
-                            let idxCT = text.indexOf("Chương trình");
-                            if (idxCT === -1) idxCT = text.indexOf("Phòng");
-                            if (idxCT === -1) idxCT = text.indexOf("Chi nhánh");
-                            
-                            if (idxCT >= 0) {
-                                metaInfo.chiNhanh = text.substring(idxCT).trim();
-                            } else if (text.startsWith("Đơn vị:")) {
-                                metaInfo.chiNhanh = text.replace(/^Đơn vị[:\s]*/gi, '').trim();
-                            } else if (!metaInfo.chiNhanh) {
-                                metaInfo.chiNhanh = text;
-                            }
+                        if (i < 3 && (lower.includes("quỹ") || lower.includes("chương trình") || lower.includes("tài chính vi mô")) && !metaInfo.tenDonVi) {
+                            metaInfo.tenDonVi = text;
+                        }
+                        if (lower.includes("phòng") || lower.includes("chi nhánh") || lower.includes("đơn vị:")) {
+                            if (!metaInfo.chiNhanh) metaInfo.chiNhanh = text.replace(/^Đơn vị[:\s]*/gi, '').trim();
                         }
                     }
                 });
 
                 let rowStr = row.join(" ");
-
                 if (rowStr.includes("Xã")) {
-                    for(let cell of row) { if(cell && typeof cell === 'string' && cell.includes("Xã")) metaInfo.xa = cell.replace("Xã/Phường: ", "").trim(); }
+                    for(let cell of row) { if(cell && typeof cell === 'string' && cell.includes("Xã")) metaInfo.xa = cell.replace(/Xã\/Phường[:\s]*/gi, "").trim(); }
                 }
                 if (rowStr.includes("Thôn") || rowStr.includes("Cụm")) {
-                    for(let cell of row) { if(cell && typeof cell === 'string' && (cell.includes("Thôn") || cell.includes("Cụm"))) metaInfo.thon = cell.replace("Thôn/bản/TDP: ", "").trim(); }
+                    for(let cell of row) { if(cell && typeof cell === 'string' && (cell.includes("Thôn" ) || cell.includes("Cụm"))) metaInfo.thon = cell.replace(/Thôn\/bản\/TDP[:\s]*/gi, "").trim(); }
                 }
-                for(let cell of row) {
-                    if (cell && typeof cell === 'string') {
-                        let cellLower = cell.toLowerCase();
-                        if (cellLower.includes("nhóm") && !metaInfo.nhom) metaInfo.nhom = cell.trim();
-                        if ((cellLower.includes("ngày") || cellLower.includes("tháng")) && !metaInfo.ngayThu) {
-                            metaInfo.ngayThu = cell.replace(/ngày thu[:\s]*/gi, "").trim();
+            }
+
+            // Fallback chuẩn nếu không tìm thấy tự động
+            if (!metaInfo.tenDonVi) metaInfo.tenDonVi = "Chương trình tài chính vi mô Hỗ trợ phụ nữ Quảng Bình";
+            if (!metaInfo.chiNhanh) metaInfo.chiNhanh = "Phòng Nghiệp vụ số 01 (Lệ Thủy)";
+            if (!metaInfo.mauSo) metaInfo.mauSo = "13/TCVM";
+
+            // Đọc chữ ký chân trang chuẩn xác
+            let sigParts = [];
+            for (let i = firstRawData.length - 1; i >= 0; i--) {
+                let row = firstRawData[i];
+                if (!row) continue;
+                let rowStr = row.join(" ").toLowerCase();
+                if (rowStr.includes("tm.") || rowStr.includes("ban") || rowStr.includes("giám đốc") || rowStr.includes("quản lý") || rowStr.includes("phó")) {
+                    let lastColCell = "";
+                    for (let c = row.length - 1; c >= 0; c--) {
+                        if (row[c] && String(row[c]).trim() !== "") {
+                            lastColCell = String(row[c]).trim();
+                            break;
+                        }
+                    }
+                    if (lastColCell && !lastColCell.toLowerCase().includes("ký, họ tên") && !lastColCell.toLowerCase().includes("đóng dấu") && !lastColCell.toLowerCase().includes("chữ ký")) {
+                        let subLines = lastColCell.split(/\r\n|\r|\n/);
+                        for (let s = subLines.length - 1; s >= 0; s--) {
+                            let cleanSub = subLines[s].trim();
+                            if (cleanSub && !sigParts.includes(cleanSub)) {
+                                sigParts.unshift(cleanSub);
+                            }
                         }
                     }
                 }
+                if (sigParts.length >= 2) break;
             }
 
-            if (!metaInfo.chiNhanh) metaInfo.chiNhanh = "Chương trình tài chính vi mô Hỗ trợ phụ nữ Quảng Bình Phòng Nghiệp vụ số 01";
-            if (!metaInfo.mauSo) metaInfo.mauSo = "13/TCVM";
-
-            if(!metaInfo.nhom && sheetName && sheetName.toLowerCase().includes("nhóm")) {
-                metaInfo.nhom = sheetName.trim();
+            if (sigParts.length > 0) {
+                metaInfo.chuKyCuoi = sigParts.join("<br>");
+            } else {
+                metaInfo.chuKyCuoi = "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ";
             }
 
-            let rowsList = [];
+            // 3. VÒNG LẶP QUÉT TẤT CẢ CÁC SHEET (NHÓM)
+            let allRowsList = [];
             let membersMap = new Map();
 
-            for (let i = 0; i < rawData.length; i++) {
-                let row = rawData[i];
-                if (row && row[0] && !isNaN(row[0]) && row[2]) {
-                    let stt = row[0];
-                    let maTV = String(row[1] || '').trim();
-                    let hoTen = String(row[2] || '').trim();
-                    
-                    let duNoVonVay = parseFloat(row[3]) || 0;
-                    let soDuTkbb   = parseFloat(row[4]) || 0;
-                    
-                    let is12T = String(row[5] || '').trim() !== '';
-                    let is15T = String(row[6] || '').trim() !== '';
-                    let is18T = String(row[7] || '').trim() !== '';
-                    let is24T = String(row[8] || '').trim() !== '';
-                    let is30T = String(row[9] || '').trim() !== '';
+            workbook.SheetNames.forEach(sheetName => {
+                if (sheetName.toLowerCase() === 'thamso') return;
+                let ws = workbook.Sheets[sheetName];
+                let sheetData = XLSX.utils.sheet_to_json(ws, {header: 1});
+                let tenNhomSheet = sheetName.trim();
 
-                    let vonGocLai  = parseFloat(row[10]) || 0;
-                    let tkbb       = parseFloat(row[11]) || 0;
-                    let laiPhat    = parseFloat(row[13]) || 0;
-                    let tongCong   = vonGocLai + tkbb + laiPhat;
+                for (let i = 0; i < sheetData.length; i++) {
+                    let row = sheetData[i];
+                    if (row && row[0] && !isNaN(row[0]) && row[2]) {
+                        let stt = row[0];
+                        let maTV = String(row[1] || '').trim();
+                        let hoTen = String(row[2] || '').trim();
+                        
+                        let duNoVonVay = parseFloat(row[3]) || 0;
+                        let soDuTkbb   = parseFloat(row[4]) || 0;
+                        
+                        let is12T = String(row[5] || '').trim() !== '';
+                        let is15T = String(row[6] || '').trim() !== '';
+                        let is18T = String(row[7] || '').trim() !== '';
+                        let is24T = String(row[8] || '').trim() !== '';
+                        let is30T = String(row[9] || '').trim() !== '';
 
-                    rowsList.push({
-                        stt: stt,
-                        maTV: maTV,
-                        hoTen: hoTen,
-                        duNoVonVay: duNoVonVay,
-                        soDuTkbb: soDuTkbb,
-                        is12T, is15T, is18T, is24T, is30T,
-                        vonGocLai: vonGocLai,
-                        tkbb: tkbb,
-                        laiPhat: laiPhat,
-                        tongCong: tongCong
-                    });
+                        let vonGocLai  = parseFloat(row[10]) || 0;
+                        let tkbb       = parseFloat(row[11]) || 0;
+                        let laiPhat    = parseFloat(row[13]) || 0;
+                        let tongCong   = vonGocLai + tkbb + laiPhat;
 
-                    let key = maTV !== '' ? maTV : hoTen;
-                    if (!membersMap.has(key)) {
-                        membersMap.set(key, { stt: stt, maTV: maTV, hoTen: hoTen, loans: [] });
+                        allRowsList.push({
+                            sheetName: tenNhomSheet,
+                            stt: stt, maTV: maTV, hoTen: hoTen,
+                            duNoVonVay: duNoVonVay, soDuTkbb: soDuTkbb,
+                            is12T, is15T, is18T, is24T, is30T,
+                            vonGocLai: vonGocLai, tkbb: tkbb, laiPhat: laiPhat, tongCong: tongCong
+                        });
+
+                        let key = maTV !== '' ? `${tenNhomSheet}_${maTV}` : `${tenNhomSheet}_${hoTen}`;
+                        if (!membersMap.has(key)) {
+                            membersMap.set(key, { sheetName: tenNhomSheet, stt: stt, maTV: maTV, hoTen: hoTen, loans: [] });
+                        }
+                        membersMap.get(key).loans.push({ duNoVonVay, soDuTkbb, vonGocLai, tkbb, laiPhat, tongCong });
                     }
-                    membersMap.get(key).loans.push({ duNoVonVay, soDuTkbb, vonGocLai, tkbb, laiPhat, tongCong });
                 }
-            }
+            });
 
-            globalMembersData = rowsList;
+            globalMembersData = allRowsList;
             globalGroupedData = Array.from(membersMap.values());
 
             let bankId = document.getElementById('bankId').value.trim();
-            let bankAcc = document.getElementById('bankAcc').value.trim();
+            let bankAcc = getSelectedBankAccount();
             let bankAccName = document.getElementById('bankAccName').value.trim();
             let contentPrefix = document.getElementById('contentPrefix').value.trim();
 
+            if (!bankAcc) {
+                alert("Vui lòng chọn hoặc nhập số tài khoản nhận tiền!");
+                return;
+            }
+
             if (bankAcc) {
+                // CHỈ TẠO MÃ QR CHO THÀNH VIÊN CÓ TỔNG NỘP > 0
                 for (let mem of globalMembersData) {
-                    let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
-                    let formattedAddInfo = contentPrefix
-                        .replace(/\[Mã TV\]/gi, mem.maTV)
-                        .replace(/\[Họ tên\]/gi, hoTenKhongDau)
-                        .replace(/\[Họ và tên\]/gi, hoTenKhongDau);
+                    if (mem.tongCong > 0) {
+                        let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
+                        let formattedAddInfo = contentPrefix
+                            .replace(/\[Mã TV\]/gi, mem.maTV)
+                            .replace(/\[Họ tên\]/gi, hoTenKhongDau)
+                            .replace(/\[Họ và tên\]/gi, hoTenKhongDau);
 
-                    if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mem.maTV.toLowerCase())) {
-                        formattedAddInfo = `${mem.maTV} ${formattedAddInfo}`;
+                        if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mem.maTV.toLowerCase())) {
+                            formattedAddInfo = `${mem.maTV} ${formattedAddInfo}`;
+                        }
+
+                        let addInfo = encodeURIComponent(formattedAddInfo.trim());
+                        let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${mem.tongCong}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
+                        mem.qrBase64 = await getBase64FromImageUrl(printUrl);
+                    } else {
+                        mem.qrBase64 = "";
                     }
-
-                    let addInfo = encodeURIComponent(formattedAddInfo.trim());
-                    let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${mem.tongCong}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
-                    
-                    mem.qrBase64 = await getBase64FromImageUrl(printUrl);
                 }
 
                 for (let memGroup of globalGroupedData) {
                     let tongNopThanhToan = memGroup.loans.reduce((sum, l) => sum + l.tongCong, 0);
-                    let hoTenKhongDau = removeVietnameseTones(memGroup.hoTen);
-                    let formattedAddInfo = contentPrefix
-                        .replace(/\[Mã TV\]/gi, memGroup.maTV)
-                        .replace(/\[Họ tên\]/gi, hoTenKhongDau)
-                        .replace(/\[Họ và tên\]/gi, hoTenKhongDau);
+                    if (tongNopThanhToan > 0) {
+                        let hoTenKhongDau = removeVietnameseTones(memGroup.hoTen);
+                        let formattedAddInfo = contentPrefix
+                            .replace(/\[Mã TV\]/gi, memGroup.maTV)
+                            .replace(/\[Họ tên\]/gi, hoTenKhongDau)
+                            .replace(/\[Họ và tên\]/gi, hoTenKhongDau);
 
-                    if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(memGroup.maTV.toLowerCase())) {
-                        formattedAddInfo = `${memGroup.maTV} ${formattedAddInfo}`;
+                        if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(memGroup.maTV.toLowerCase())) {
+                            formattedAddInfo = `${memGroup.maTV} ${formattedAddInfo}`;
+                        }
+
+                        let addInfo = encodeURIComponent(formattedAddInfo.trim());
+                        let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
+                        memGroup.qrBase64 = await getBase64FromImageUrl(printUrl);
+                    } else {
+                        memGroup.qrBase64 = "";
                     }
-
-                    let addInfo = encodeURIComponent(formattedAddInfo.trim());
-                    let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
-                    
-                    memGroup.qrBase64 = await getBase64FromImageUrl(printUrl);
                 }
             }
 
             if(globalMembersData.length > 0) {
                 displayPreview(globalMembersData);
             } else {
-                alert("Không tìm thấy dữ liệu thành viên hợp lệ trong file Excel!");
+                alert("Không tìm thấy dữ liệu thành viên hợp lệ trong các sheet của file Excel!");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -540,8 +584,11 @@
             sumLaiPhat += mem.laiPhat;
             sumNop += mem.tongCong;
 
+            let qrCellHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" class="thumb-qr" onclick="openModal('${mem.qrBase64}', '${mem.hoTen} (Mã: ${mem.maTV})')" title="Bấm để xem lớn">` : '<span style="color:#aaa; font-size:11px;">Không có</span>';
+
             let tr = `<tr>
                 <td class="text-center">${mem.stt}</td>
+                <td style="font-weight: bold; color: #0275d8;">${mem.sheetName}</td>
                 <td class="text-center">${mem.maTV}</td>
                 <td>${mem.hoTen}</td>
                 <td class="text-right">${mem.duNoVonVay > 0 ? mem.duNoVonVay.toLocaleString('vi-VN') : ''}</td>
@@ -550,13 +597,13 @@
                 <td class="text-right">${mem.tkbb > 0 ? mem.tkbb.toLocaleString('vi-VN') : ''}</td>
                 <td class="text-right">${mem.laiPhat > 0 ? mem.laiPhat.toLocaleString('vi-VN') : ''}</td>
                 <td class="text-right"><strong>${mem.tongCong > 0 ? mem.tongCong.toLocaleString('vi-VN') : ''}</strong></td>
-                <td class="text-center"><img src="${mem.qrBase64}" class="thumb-qr" onclick="openModal('${mem.qrBase64}', '${mem.hoTen} (Mã: ${mem.maTV})')" title="Bấm để xem lớn"></td>
+                <td class="text-center">${qrCellHtml}</td>
             </tr>`;
             tbody.innerHTML += tr;
         });
 
         let totalTr = `<tr style="font-weight: bold; background-color: #f1f1f1;">
-            <td colspan="3" class="text-center">TỔNG CỘNG</td>
+            <td colspan="4" class="text-center">TỔNG CỘNG TOÀN THÔN</td>
             <td class="text-right">${sumDuNo.toLocaleString('vi-VN')}</td>
             <td class="text-right">${sumSoDuTkbb.toLocaleString('vi-VN')}</td>
             <td class="text-right">${sumVon.toLocaleString('vi-VN')}</td>
@@ -570,9 +617,9 @@
         document.getElementById('preview-section').style.display = 'block';
     }
 
-    // In Phiếu thu cá nhân (Khổ đứng Portrait)
+    // In Phiếu thu cá nhân
     function generatePrintPDF() {
-        let bankAcc = document.getElementById('bankAcc').value.trim();
+        let bankAcc = getSelectedBankAccount();
         let groupLeaderName = document.getElementById('groupLeaderName').value.trim();
         
         let rawDateVal = document.getElementById('inputNgayThu').value;
@@ -584,8 +631,7 @@
         }
 
         if(!bankAcc) {
-            alert("Vui lòng nhập số tài khoản ngân hàng nhận tiền!");
-            document.getElementById('bankAcc').focus();
+            alert("Vui lòng chọn hoặc nhập số tài khoản ngân hàng nhận tiền!");
             return;
         }
 
@@ -598,16 +644,19 @@
         let printArea = document.getElementById('printArea');
         printArea.innerHTML = '';
 
-        let tenNhomChuan = metaInfo.nhom ? (metaInfo.nhom.toLowerCase().includes('nhóm') ? metaInfo.nhom : 'Nhóm: ' + metaInfo.nhom) : 'Nhóm 01';
         let mauSoChuan = metaInfo.mauSo.toLowerCase().includes("mẫu số") ? metaInfo.mauSo : `Mẫu số: ${metaInfo.mauSo}`;
         let chiNhanhDisplay = formatChiNhanhHtml(metaInfo.chiNhanh);
-
         let logoHtml = logoBase64 ? `<img src="${logoBase64}" alt="Logo">` : '';
 
+        let countPrinted = 0;
         globalGroupedData.forEach((mem) => {
             let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
+            if (tongNopThanhToan <= 0) return;
+            countPrinted++;
+
             let docSo = docSoTien(tongNopThanhToan);
             let qrSrc = mem.qrBase64;
+            let tenNhomChuan = mem.sheetName;
 
             let rowsHtml = '';
             mem.loans.forEach((loan) => {
@@ -643,8 +692,8 @@
                                 <div class="header-logo-box">
                                     ${logoHtml}
                                     <div>
-                                        <div style="font-weight: bold; font-size: 11pt;">${metaInfo.tenDonVi}</div>
-                                        <div style="font-size: 10pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                                        <div style="font-weight: bold; font-size: 10pt;">${metaInfo.tenDonVi}</div>
+                                        <div style="font-size: 9.5pt; line-height: 1.2;">${chiNhanhDisplay}</div>
                                     </div>
                                 </div>
                             </td>
@@ -660,7 +709,7 @@
                     <div class="diaban-row">
                         <strong>Xã/Phường:</strong> ${metaInfo.xa} &nbsp;&nbsp;&nbsp;&nbsp; 
                         <strong>Thôn/bản/TDP:</strong> ${metaInfo.thon} &nbsp;&nbsp;&nbsp;&nbsp; 
-                        <strong>Nhóm:</strong> ${tenNhomChuan.replace('Nhóm: ', '')}
+                        <strong>Nhóm:</strong> ${tenNhomChuan}
                     </div>
 
                     <div style="margin-bottom: 4px; font-size: 11pt;">
@@ -711,8 +760,19 @@
             printArea.innerHTML += htmlPhieu;
         });
 
+        if (countPrinted === 0) {
+            alert("Không có thành viên nào có phát sinh số tiền nộp để xuất phiếu thu!");
+            let dynamicStyle = document.getElementById("dynamicPrintStyle");
+            if (dynamicStyle) dynamicStyle.remove();
+            return;
+        }
+
+        let cleanXa = (metaInfo.xa || "").replace(/[\/\\?%*:|"<>]/g, '_');
+        let cleanThon = (metaInfo.thon || "").replace(/[\/\\?%*:|"<>]/g, '_');
+        let defaultFileName = `PhieuThu_${cleanXa}_${cleanThon}`.replace(/_+/g, '_');
+
         let oldTitle = document.title;
-        document.title = "";
+        document.title = defaultFileName;
         window.print();
         document.title = oldTitle;
         
@@ -720,12 +780,11 @@
         if (dynamicStyle) dynamicStyle.remove();
     }
 
-    // In Bảng kê thu tiền tổng hợp (Khổ ngang Landscape)
+    // In Bảng kê tổng hợp (Khổ ngang) chia theo từng nhóm / sheet
     function generatePrintBangKe() {
-        let bankAcc = document.getElementById('bankAcc').value.trim();
+        let bankAcc = getSelectedBankAccount();
         if(!bankAcc) {
-            alert("Vui lòng nhập số tài khoản ngân hàng nhận tiền!");
-            document.getElementById('bankAcc').focus();
+            alert("Vui lòng chọn hoặc nhập số tài khoản ngân hàng nhận tiền!");
             return;
         }
 
@@ -747,166 +806,180 @@
         let printArea = document.getElementById('printArea');
         printArea.innerHTML = '';
 
-        let tenNhomChuan = metaInfo.nhom ? (metaInfo.nhom.toLowerCase().includes('nhóm') ? metaInfo.nhom : 'Nhóm: ' + metaInfo.nhom) : 'Nhóm 01';
         let mauSoChuan = metaInfo.mauSo.toLowerCase().includes("mẫu số") ? metaInfo.mauSo : `Mẫu số: ${metaInfo.mauSo}`;
         let chiNhanhDisplay = formatChiNhanhHtml(metaInfo.chiNhanh);
-
         let logoHtml = logoBase64 ? `<img src="${logoBase64}" alt="Logo">` : '';
 
-        let rowsHtml = '';
-        let sumDuNo = 0, sumSoDuTkbb = 0, sumVon = 0, sumTkbb = 0, sumLaiPhat = 0, sumNop = 0;
-
-        globalMembersData.forEach((mem) => {
-            sumDuNo += mem.duNoVonVay;
-            sumSoDuTkbb += mem.soDuTkbb;
-            sumVon += mem.vonGocLai;
-            sumTkbb += mem.tkbb;
-            sumLaiPhat += mem.laiPhat;
-            sumNop += mem.tongCong;
-
-            rowsHtml += `
-                <tr>
-                    <td>${mem.stt}</td>
-                    <td>${mem.maTV}</td>
-                    <td style="text-align: left; padding-left: 4px;">${mem.hoTen}</td>
-                    <td style="text-align: right; padding-right: 3px;">${mem.duNoVonVay > 0 ? mem.duNoVonVay.toLocaleString('vi-VN') : ''}</td>
-                    <td style="text-align: right; padding-right: 3px;">${mem.soDuTkbb > 0 ? mem.soDuTkbb.toLocaleString('vi-VN') : '-'}</td>
-                    <td>${mem.is12T ? 'x' : ''}</td>
-                    <td>${mem.is15T ? 'x' : ''}</td>
-                    <td>${mem.is18T ? 'x' : ''}</td>
-                    <td>${mem.is24T ? 'x' : ''}</td>
-                    <td style="text-align: right; padding-right: 3px;">${mem.vonGocLai > 0 ? mem.vonGocLai.toLocaleString('vi-VN') : ''}</td>
-                    <td style="text-align: right; padding-right: 3px;">${mem.tkbb > 0 ? mem.tkbb.toLocaleString('vi-VN') : '-'}</td>
-                    <td style="text-align: right; padding-right: 3px;">${mem.laiPhat > 0 ? mem.laiPhat.toLocaleString('vi-VN') : '-'}</td>
-                    <td style="text-align: right; padding-right: 3px; font-weight: bold;">${mem.tongCong > 0 ? mem.tongCong.toLocaleString('vi-VN') : ''}</td>
-                    <td></td><td></td><td></td><td></td>
-                    <td></td>
-                    <td><img src="${mem.qrBase64}" style="width: 45px; height: 50px; object-fit: contain;"></td>
-                </tr>
-            `;
+        let sheetsMap = new Map();
+        globalMembersData.forEach(mem => {
+            if (!sheetsMap.has(mem.sheetName)) {
+                sheetsMap.set(mem.sheetName, []);
+            }
+            sheetsMap.get(mem.sheetName).push(mem);
         });
 
-        let tongTienChu = docSoTien(sumNop);
+        sheetsMap.forEach((membersOfGroup, groupName) => {
+            let rowsHtml = '';
+            let sumDuNo = 0, sumSoDuTkbb = 0, sumVon = 0, sumTkbb = 0, sumLaiPhat = 0, sumNop = 0;
 
-        let htmlBangKe = `
-            <div class="bangke-print-container">
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 2px; border: none;">
+            membersOfGroup.forEach((mem) => {
+                sumDuNo += mem.duNoVonVay;
+                sumSoDuTkbb += mem.soDuTkbb;
+                sumVon += mem.vonGocLai;
+                sumTkbb += mem.tkbb;
+                sumLaiPhat += mem.laiPhat;
+                sumNop += mem.tongCong;
+
+                let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 45px; height: 50px; object-fit: contain;">` : '';
+
+                rowsHtml += `
                     <tr>
-                        <td style="width: 75%; text-align: left; border: none; vertical-align: top;">
-                            <div class="header-logo-box">
-                                ${logoHtml}
-                                <div>
-                                    <div style="font-weight: bold; font-size: 9pt;">${metaInfo.tenDonVi}</div>
-                                    <div style="font-size: 8.5pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                        <td>${mem.stt}</td>
+                        <td>${mem.maTV}</td>
+                        <td style="text-align: left; padding-left: 4px;">${mem.hoTen}</td>
+                        <td style="text-align: right; padding-right: 3px;">${mem.duNoVonVay > 0 ? mem.duNoVonVay.toLocaleString('vi-VN') : ''}</td>
+                        <td style="text-align: right; padding-right: 3px;">${mem.soDuTkbb > 0 ? mem.soDuTkbb.toLocaleString('vi-VN') : '-'}</td>
+                        <td>${mem.is12T ? 'x' : ''}</td>
+                        <td>${mem.is15T ? 'x' : ''}</td>
+                        <td>${mem.is18T ? 'x' : ''}</td>
+                        <td>${mem.is24T ? 'x' : ''}</td>
+                        <td style="text-align: right; padding-right: 3px;">${mem.vonGocLai > 0 ? mem.vonGocLai.toLocaleString('vi-VN') : ''}</td>
+                        <td style="text-align: right; padding-right: 3px;">${mem.tkbb > 0 ? mem.tkbb.toLocaleString('vi-VN') : '-'}</td>
+                        <td style="text-align: right; padding-right: 3px;">${mem.laiPhat > 0 ? mem.laiPhat.toLocaleString('vi-VN') : '-'}</td>
+                        <td style="text-align: right; padding-right: 3px; font-weight: bold;">${mem.tongCong > 0 ? mem.tongCong.toLocaleString('vi-VN') : ''}</td>
+                        <td></td><td></td><td></td><td></td>
+                        <td></td>
+                        <td>${qrColHtml}</td>
+                    </tr>
+                `;
+            });
+
+            let tongTienChu = docSoTien(sumNop);
+
+            let htmlBangKe = `
+                <div class="bangke-print-container">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 2px; border: none;">
+                        <tr>
+                            <td style="width: 75%; text-align: left; border: none; vertical-align: top;">
+                                <div class="header-logo-box">
+                                    ${logoHtml}
+                                    <div>
+                                        <div style="font-weight: bold; font-size: 8.5pt;">${metaInfo.tenDonVi}</div>
+                                        <div style="font-size: 8pt; line-height: 1.2;">${chiNhanhDisplay}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td style="width: 25%; text-align: right; border: none; vertical-align: top;">
-                            <div style="font-size: 8.5pt; font-weight: bold; border: 1px solid #000; display: inline-block; padding: 3px 8px;">${mauSoChuan}</div>
-                        </td>
-                    </tr>
-                </table>
-
-                <div style="text-align: center; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; margin: 3px 0 2px 0;">
-                    BẢNG KÊ THU TIỀN CỦA THÀNH VIÊN
-                </div>
-                <div style="text-align: center; font-style: italic; font-size: 8pt; margin-bottom: 4px;">${ngayStr}</div>
-
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 8pt; border: none;">
-                    <tr>
-                        <td style="border: none; text-align: left; width: 33%;"><strong>Xã/Phường:</strong> <i>${metaInfo.xa}</i></td>
-                        <td style="border: none; text-align: center; width: 34%;"><strong>Thôn/bản/TDP:</strong> <i>${metaInfo.thon}</i></td>
-                        <td style="border: none; text-align: right; width: 33%;"><strong><i>${tenNhomChuan}</i></strong></td>
-                    </tr>
-                </table>
-
-                <div style="text-align: right; font-style: italic; font-size: 7.5pt; margin-bottom: 2px;">ĐVT: VND</div>
-
-                <table class="print-tbl">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width: 2.5%;">STT</th>
-                            <th rowspan="2" style="width: 6%;">Mã TV</th>
-                            <th rowspan="2" style="width: 13%;">Họ và tên</th>
-                            <th colspan="2" style="width: 17%;">Tình hình tiết kiệm - vay vốn</th>
-                            <th colspan="4" style="width: 8%;">Món vay</th>
-                            <th colspan="4" style="width: 20%;">Kế hoạch</th>
-                            <th colspan="4" style="width: 19%;">Thực thu</th>
-                            <th rowspan="2" style="width: 5%;">Chữ ký</th>
-                            <th rowspan="2" style="width: 7.5%;">Mã QR</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 9%;">Dư nợ vốn vay<br>(Gốc + lãi)</th>
-                            <th style="width: 8%;">Số dư gốc TKBB<br>hàng tháng</th>
-                            <th style="width: 2%;">12T</th>
-                            <th style="width: 2%;">15T</th>
-                            <th style="width: 2%;">18T</th>
-                            <th style="width: 2%;">24T</th>
-                            <th style="width: 5.5%;">Vốn<br>(gốc+lãi)</th>
-                            <th style="width: 5%;">TKBB<br>hàng tháng</th>
-                            <th style="width: 4%;">Lãi<br>Phạt</th>
-                            <th style="width: 5.5%;">Tổng</th>
-                            <th style="width: 5.5%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 5%;">TKBB hàng<br>tháng</th>
-                            <th style="width: 4%;">Lãi phạt</th>
-                            <th style="width: 4.5%;">Tổng</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml}
-                        <tr style="font-weight: bold; background-color: #fff;">
-                            <td colspan="3">Tổng cộng</td>
-                            <td style="text-align: right; padding-right: 3px;">${sumDuNo.toLocaleString('vi-VN')}</td>
-                            <td style="text-align: right; padding-right: 3px;">${sumSoDuTkbb.toLocaleString('vi-VN')}</td>
-                            <td></td><td></td><td></td><td></td>
-                            <td style="text-align: right; padding-right: 3px;">${sumVon.toLocaleString('vi-VN')}</td>
-                            <td style="text-align: right; padding-right: 3px;">${sumTkbb.toLocaleString('vi-VN')}</td>
-                            <td style="text-align: right; padding-right: 3px;">-</td>
-                            <td style="text-align: right; padding-right: 3px;">${sumNop.toLocaleString('vi-VN')}</td>
-                            <td></td><td></td><td></td><td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 6px; font-size: 8pt; line-height: 1.3;">
-                    <div><strong>Tổng số tiền dự thu bằng chữ:</strong> <i>${tongTienChu}.</i></div>
-                    <div style="margin-top: 2px;"><strong>Tổng số tiền thực thu bằng chữ:</strong> ............................................................................................................................................................................</div>
-                </div>
-
-                <div style="margin-top: 10px; width: 100%;">
-                    <table style="width: 100%; border: none; text-align: center; font-size: 7.5pt;">
-                        <tr>
-                            <td style="border: none; width: 20%; vertical-align: top;">
-                                <div style="font-weight: bold;">Nhóm trưởng/Người nộp tiền</div>
-                                <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
                             </td>
-                            <td style="border: none; width: 20%; vertical-align: top;">
-                                <div style="font-weight: bold;">Cán bộ tín dụng</div>
-                                <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                            </td>
-                            <td style="border: none; width: 20%; vertical-align: top;">
-                                <div style="font-weight: bold;">Cán bộ thu tiền</div>
-                                <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                            </td>
-                            <td style="border: none; width: 20%; vertical-align: top;">
-                                <div style="font-weight: bold;">Trưởng/Phó phòng Nghiệp vụ</div>
-                                <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                            </td>
-                            <td style="border: none; width: 20%; vertical-align: top;">
-                                <div style="font-weight: bold;">TM. Ban Giám đốc<br>Phó Giám đốc</div>
-                                <div style="font-style: italic; font-size: 7pt;">(Ký, đóng dấu và ghi rõ họ tên)</div>
+                            <td style="width: 25%; text-align: right; border: none; vertical-align: top;">
+                                <div style="font-size: 8.5pt; font-weight: bold; border: 1px solid #000; display: inline-block; padding: 3px 8px;">${mauSoChuan}</div>
                             </td>
                         </tr>
                     </table>
+
+                    <div style="text-align: center; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; margin: 3px 0 2px 0;">
+                        BẢNG KÊ THU TIỀN CỦA THÀNH VIÊN
+                    </div>
+                    <div style="text-align: center; font-style: italic; font-size: 8pt; margin-bottom: 4px;">${ngayStr}</div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 8pt; border: none;">
+                        <tr>
+                            <td style="border: none; text-align: left; width: 33%;"><strong>Xã/Phường:</strong> <i>${metaInfo.xa}</i></td>
+                            <td style="border: none; text-align: center; width: 34%;"><strong>Thôn/bản/TDP:</strong> <i>${metaInfo.thon}</i></td>
+                            <td style="border: none; text-align: right; width: 33%;"><strong><i>Nhóm: ${groupName}</i></strong></td>
+                        </tr>
+                    </table>
+
+                    <div style="text-align: right; font-style: italic; font-size: 7.5pt; margin-bottom: 2px;">ĐVT: VND</div>
+
+                    <table class="print-tbl">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width: 2.5%;">STT</th>
+                                <th rowspan="2" style="width: 6%;">Mã TV</th>
+                                <th rowspan="2" style="width: 13%;">Họ và tên</th>
+                                <th colspan="2" style="width: 17%;">Tình hình tiết kiệm - vay vốn</th>
+                                <th colspan="4" style="width: 8%;">Món vay</th>
+                                <th colspan="4" style="width: 20%;">Kế hoạch</th>
+                                <th colspan="4" style="width: 19%;">Thực thu</th>
+                                <th rowspan="2" style="width: 5%;">Chữ ký</th>
+                                <th rowspan="2" style="width: 7.5%;">Mã QR</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 9%;">Dư nợ vốn vay<br>(Gốc + lãi)</th>
+                                <th style="width: 8%;">Số dư gốc TKBB<br>hàng tháng</th>
+                                <th style="width: 2%;">12T</th>
+                                <th style="width: 2%;">15T</th>
+                                <th style="width: 2%;">18T</th>
+                                <th style="width: 2%;">24T</th>
+                                <th style="width: 5.5%;">Vốn<br>(gốc+lãi)</th>
+                                <th style="width: 5%;">TKBB<br>hàng tháng</th>
+                                <th style="width: 4%;">Lãi<br>Phạt</th>
+                                <th style="width: 5.5%;">Tổng</th>
+                                <th style="width: 5.5%;">Vốn (gốc+lãi)</th>
+                                <th style="width: 5%;">TKBB hàng<br>tháng</th>
+                                <th style="width: 4%;">Lãi phạt</th>
+                                <th style="width: 4.5%;">Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                            <tr style="font-weight: bold; background-color: #fff;">
+                                <td colspan="3">Tổng cộng</td>
+                                <td style="text-align: right; padding-right: 3px;">${sumDuNo.toLocaleString('vi-VN')}</td>
+                                <td style="text-align: right; padding-right: 3px;">${sumSoDuTkbb.toLocaleString('vi-VN')}</td>
+                                <td></td><td></td><td></td><td></td>
+                                <td style="text-align: right; padding-right: 3px;">${sumVon.toLocaleString('vi-VN')}</td>
+                                <td style="text-align: right; padding-right: 3px;">${sumTkbb.toLocaleString('vi-VN')}</td>
+                                <td style="text-align: right; padding-right: 3px;">-</td>
+                                <td style="text-align: right; padding-right: 3px;">${sumNop.toLocaleString('vi-VN')}</td>
+                                <td></td><td></td><td></td><td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 6px; font-size: 8pt; line-height: 1.3;">
+                        <div><strong>Tổng số tiền dự thu bằng chữ:</strong> <i>${tongTienChu}.</i></div>
+                        <div style="margin-top: 2px;"><strong>Tổng số tiền thực thu bằng chữ:</strong> ............................................................................................................................................................................</div>
+                    </div>
+
+                    <div style="margin-top: 10px; width: 100%;">
+                        <table style="width: 100%; border: none; text-align: center; font-size: 7.5pt;">
+                            <tr>
+                                <td style="border: none; width: 20%; vertical-align: top;">
+                                    <div style="font-weight: bold;">Nhóm trưởng/Người nộp tiền</div>
+                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
+                                </td>
+                                <td style="border: none; width: 20%; vertical-align: top;">
+                                    <div style="font-weight: bold;">Cán bộ tín dụng</div>
+                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
+                                </td>
+                                <td style="border: none; width: 20%; vertical-align: top;">
+                                    <div style="font-weight: bold;">Cán bộ thu tiền</div>
+                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
+                                </td>
+                                <td style="border: none; width: 20%; vertical-align: top;">
+                                    <div style="font-weight: bold;">Trưởng/Phó phòng Nghiệp vụ</div>
+                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
+                                </td>
+                                <td style="border: none; width: 20%; vertical-align: top;">
+                                    <div style="font-weight: bold;">${metaInfo.chuKyCuoi}</div>
+                                    <div style="font-style: italic; font-size: 7pt;">(Ký, đóng dấu và ghi rõ họ tên)</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        `;
-        printArea.innerHTML = htmlBangKe;
+            `;
+            printArea.innerHTML += htmlBangKe;
+        });
+
+        let cleanXa = (metaInfo.xa || "").replace(/[\/\\?%*:|"<>]/g, '_');
+        let cleanThon = (metaInfo.thon || "").replace(/[\/\\?%*:|"<>]/g, '_');
+        let defaultFileName = `BangKeThuTien_${cleanXa}_${cleanThon}_AllNhom`.replace(/_+/g, '_');
 
         let oldTitle = document.title;
-        document.title = "";
+        document.title = defaultFileName;
         window.print();
         document.title = oldTitle;
 
@@ -915,32 +988,39 @@
     }
 
     function renderFolderView() {
-        let bankAcc = document.getElementById('bankAcc').value.trim();
+        let bankAcc = getSelectedBankAccount();
         if(!bankAcc) {
-            alert("Vui lòng nhập số tài khoản ngân hàng!");
-            document.getElementById('bankAcc').focus();
+            alert("Vui lòng chọn hoặc nhập số tài khoản ngân hàng!");
             return;
         }
 
-        let folderPath = `📁 Thư mục nhóm: ${metaInfo.xa} / ${metaInfo.thon} / ${metaInfo.nhom}`;
+        let folderPath = `📁 Thư mục toàn thôn: ${metaInfo.xa} / ${metaInfo.thon} (Đã tổng hợp các nhóm)`;
         document.getElementById('folderTitle').innerText = folderPath;
 
         let container = document.getElementById('qrCardsList');
         container.innerHTML = '';
 
+        let countQR = 0;
         globalGroupedData.forEach(mem => {
             let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
+            if (tongNopThanhToan <= 0) return;
+            countQR++;
+
             let qrSrc = mem.qrBase64;
             let card = document.createElement('div');
             card.className = 'qr-card';
             card.innerHTML = `
-                <img src="${qrSrc}" alt="QR" onclick="openModal('${qrSrc}', '${mem.hoTen} (Mã: ${mem.maTV})')" title="Bấm để xem lớn"><br>
+                <img src="${qrSrc}" alt="QR" onclick="openModal('${qrSrc}', '${mem.hoTen} (${mem.sheetName})')" title="Bấm để xem lớn"><br>
                 <div style="font-weight: bold; font-size: 13px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${mem.hoTen}">${mem.hoTen}</div>
-                <div style="font-size: 11px; color: #666; margin-top: 2px;">Mã TV: ${mem.maTV}</div>
+                <div style="font-size: 11px; color: #0275d8; font-weight: bold; margin-top: 2px;">${mem.sheetName} - Mã TV: ${mem.maTV}</div>
                 <div style="font-size: 13px; color: #d9534f; font-weight: bold; margin: 4px 0;">${tongNopThanhToan.toLocaleString('vi-VN')} đ</div>
             `;
             container.appendChild(card);
         });
+
+        if (countQR === 0) {
+            container.innerHTML = '<p style="color: #d9534f; font-weight: bold;">Không có thành viên nào có phát sinh số tiền nộp trong kỳ này!</p>';
+        }
 
         document.getElementById('folderViewContainer').style.display = 'block';
         document.getElementById('folderViewContainer').scrollIntoView({ behavior: 'smooth' });
@@ -974,8 +1054,7 @@
         }
 
         let totalGroupAmount = globalMembersData.reduce((sum, mem) => sum + mem.tongCong, 0);
-        let tenNhom = metaInfo.nhom || "Nhóm";
-        let message = `Kính gửi anh/chị ${leaderName ? leaderName : 'Nhóm trưởng'},\n\nBảng kê thu tiền vốn, lãi và tiết kiệm của ${tenNhom} (${metaInfo.xa} - ${metaInfo.thon}) với tổng số tiền cần nộp là: ${totalGroupAmount.toLocaleString('vi-VN')} VNĐ đã sẵn sàng.\n\nNhờ anh/chị triển khai thu hộ các thành viên trong nhóm giúp em nhé. Xin cảm ơn!`;
+        let message = `Kính gửi anh/chị ${leaderName ? leaderName : 'Nhóm trưởng'},\n\nBảng kê thu tiền vốn, lãi và tiết kiệm tổng hợp (${metaInfo.xa} - ${metaInfo.thon}) với tổng số tiền cần nộp là: ${totalGroupAmount.toLocaleString('vi-VN')} VNĐ đã sẵn sàng.\n\nNhờ anh/chị triển khai thu hộ các thành viên giúp em nhé. Xin cảm ơn!`;
 
         let zaloUrl = `https://zalo.me/${leaderPhone}?text=${encodeURIComponent(message)}`;
         window.open(zaloUrl, '_blank');
