@@ -100,7 +100,7 @@
         <div>
             <label>Số Tài Khoản Nhận Tiền:</label>
             <select id="bankAcc" onchange="checkCustomAccount(this)">
-                <option value="3807201003783">3807201003783(QUY_DONG HOI)</option>
+                <option value="3807201003783">3807201003783 (QUY_DONG HOI)</option>
                 <option value="3801201009448">3801201009448 (QUY_BO TRACH)</option>
                 <option value="9876543210987">9876543210987 (PNV_Đồng Hới_TCVM)</option>
                 <option value="CUSTOM">➕ Nhập số tài khoản khác...</option>
@@ -136,7 +136,7 @@
     <div class="upload-section">
         <h3>1. Chọn file Excel bảng kê nhiều nhóm/sheet (.xls / .xlsx)</h3>
         <input type="file" id="excelFile" accept=".xlsx, .xls" style="margin-top: 10px;">
-        <p style="font-size: 12px; color: #666; margin-top: 5px;">Hệ thống sẽ tự động quét toàn bộ các Sheet (Nhóm), tự động nhận diện tên chương trình và chi nhánh chính xác từ file.</p>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">Hệ thống sẽ tự động quét toàn bộ các Sheet (Nhóm), tự động nhận diện tên chương trình, chi nhánh, xã, thôn chính xác từ file.</p>
     </div>
 
     <div id="preview-section" style="display:none;">
@@ -165,10 +165,30 @@
                 <tbody id="previewBody"></tbody>
             </table>
         </div>
+
+        <!-- Khung tùy chọn xuất Phiếu Thu PDF theo nhóm hoặc tất cả -->
+        <div style="margin-top: 15px; background: #eef5ff; padding: 15px; border-radius: 6px; border: 1px solid #bce8f1;">
+            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #0275d8;">📥 Tùy chọn xuất Phiếu Thu PDF theo nhóm:</label>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="selectGroupPDF" style="flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px;">
+                    <option value="ALL">-- Tất cả các nhóm trong file --</option>
+                </select>
+                <button class="btn-blue" onclick="generatePrintPDF()" style="flex: 1; min-width: 200px; padding: 11px; margin: 0;">📥 Xuất Phiếu Thu PDF</button>
+            </div>
+        </div>
+
+        <!-- Khung tùy chọn in bảng kê theo nhóm -->
+        <div style="margin-top: 15px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #ddd;">
+            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #0275d8;">🖨️ Tùy chọn in bảng kê theo nhóm:</label>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="selectGroupPrint" style="flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px;">
+                    <option value="ALL">-- In tất cả các nhóm (Mỗi nhóm 1 trang) --</option>
+                </select>
+                <button class="btn-purple" onclick="generatePrintBangKeSelected()" style="flex: 1; min-width: 200px; padding: 11px; margin: 0;">🖨️ In Bảng Kê Nhóm Đã Chọn</button>
+            </div>
+        </div>
         
         <div class="btn-group">
-            <button class="btn-blue" onclick="generatePrintPDF()">📥 Tải / Xuất Phiếu Thu PDF (Từng người có phát sinh)</button>
-            <button class="btn-purple" onclick="generatePrintBangKe()">🖨️ In Bảng Kê Từng Nhóm / Toàn Thôn</button>
             <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách thẻ QR theo nhóm, toàn thôn</button>
             <button class="btn-zalo" onclick="sendZaloToGroupLeader()">📲 Gửi Zalo Nhóm Trưởng</button>
         </div>
@@ -198,6 +218,7 @@
 <script>
     let globalMembersData = [];
     let globalGroupedData = []; 
+    let globalSheetsMeta = new Map(); 
     let logoBase64 = "";
 
     let metaInfo = {
@@ -359,7 +380,7 @@
         return cleanText;
     }
 
-    // ĐỌC TẤT CẢ CÁC SHEET VÀ TRỐC TÁCH CHÍNH XÁC TÊN ĐƠN VỊ, CHI NHÁNH TỪ FILE EXCEL
+    // ĐỌC TẤT CẢ CÁC SHEET VÀ TRÍCH TÁCH THÔNG TIN XÃ, THÔN, NHÓM TỪ FILE EXCEL
     document.getElementById('excelFile').addEventListener('change', async function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -370,20 +391,8 @@
             let workbook = XLSX.read(data, {type: 'array'});
             
             metaInfo = { tenDonVi: "", chiNhanh: "", mauSo: "", xa: "", thon: "", ngayThu: "", chuKyCuoi: "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ" };
+            globalSheetsMeta.clear();
 
-            // 1. Quét dữ liệu từ Sheet ThamSo nếu có (để lấy thông tin chuẩn)
-            let rawThamSoList = [];
-            if (workbook.SheetNames.includes('ThamSo')) {
-                let wsThamSo = workbook.Sheets['ThamSo'];
-                let dataThamSo = XLSX.utils.sheet_to_json(wsThamSo);
-                dataThamSo.forEach(row => {
-                    let maTS = String(row['Mã tham số'] || '').trim();
-                    let giaTri = String(row['Giá trị'] || '').trim();
-                    rawThamSoList.push({maTS, giaTri});
-                });
-            }
-
-            // 2. Quét thông tin từ Sheet báo cáo đầu tiên
             let firstSheetName = workbook.SheetNames.length > 1 && workbook.SheetNames[0] === 'ThamSo' ? workbook.SheetNames[1] : workbook.SheetNames[0];
             let firstWs = workbook.Sheets[firstSheetName];
             let firstRawData = XLSX.utils.sheet_to_json(firstWs, {header: 1});
@@ -407,22 +416,12 @@
                         }
                     }
                 });
-
-                let rowStr = row.join(" ");
-                if (rowStr.includes("Xã")) {
-                    for(let cell of row) { if(cell && typeof cell === 'string' && cell.includes("Xã")) metaInfo.xa = cell.replace(/Xã\/Phường[:\s]*/gi, "").trim(); }
-                }
-                if (rowStr.includes("Thôn") || rowStr.includes("Cụm")) {
-                    for(let cell of row) { if(cell && typeof cell === 'string' && (cell.includes("Thôn" ) || cell.includes("Cụm"))) metaInfo.thon = cell.replace(/Thôn\/bản\/TDP[:\s]*/gi, "").trim(); }
-                }
             }
 
-            // Fallback chuẩn nếu không tìm thấy tự động
             if (!metaInfo.tenDonVi) metaInfo.tenDonVi = "Chương trình tài chính vi mô Hỗ trợ phụ nữ Quảng Bình";
             if (!metaInfo.chiNhanh) metaInfo.chiNhanh = "Phòng Nghiệp vụ số 01 (Lệ Thủy)";
             if (!metaInfo.mauSo) metaInfo.mauSo = "13/TCVM";
 
-            // Đọc chữ ký chân trang chuẩn xác
             let sigParts = [];
             for (let i = firstRawData.length - 1; i >= 0; i--) {
                 let row = firstRawData[i];
@@ -455,15 +454,67 @@
                 metaInfo.chuKyCuoi = "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ";
             }
 
-            // 3. VÒNG LẶP QUÉT TẤT CẢ CÁC SHEET (NHÓM)
             let allRowsList = [];
             let membersMap = new Map();
+            let sheetsMap = new Map();
 
             workbook.SheetNames.forEach(sheetName => {
                 if (sheetName.toLowerCase() === 'thamso') return;
                 let ws = workbook.Sheets[sheetName];
                 let sheetData = XLSX.utils.sheet_to_json(ws, {header: 1});
                 let tenNhomSheet = sheetName.trim();
+
+                let sheetXa = "";
+                let sheetThon = "";
+                let sheetTenNhom = tenNhomSheet;
+
+                for (let i = 0; i < Math.min(10, sheetData.length); i++) {
+                    let row = sheetData[i];
+                    if (!row) continue;
+                    let rowJoined = row.join(" ");
+                    
+                    row.forEach(cell => {
+                        if (cell && typeof cell === 'string') {
+                            let cellStr = cell.trim();
+                            let lower = cellStr.toLowerCase();
+                            if (lower.includes("xã/phường:") || lower.includes("xã / phường:")) {
+                                sheetXa = cellStr.replace(/Xã\/Phường[:\s]*/gi, "").trim();
+                            } else if (lower.includes("thôn/bản/tdp:") || lower.includes("thôn / bản") || lower.includes("thôn/bản")) {
+                                sheetThon = cellStr.replace(/Thôn\/bản\/TDP[:\s]*/gi, "").replace(/Thôn\/bản[:\s]*/gi, "").trim();
+                            } else if (lower.includes("nhóm ") && !lower.includes("bảng kê")) {
+                                sheetTenNhom = cellStr.trim();
+                            }
+                        }
+                    });
+
+                    if (rowJoined.includes("Xã") && !sheetXa) {
+                        for(let cell of row) {
+                            if(cell && typeof cell === 'string' && cell.includes("Xã")) {
+                                sheetXa = cell.replace(/Xã\/Phường[:\s]*/gi, "").trim();
+                            }
+                        }
+                    }
+                    if ((rowJoined.includes("Thôn") || rowJoined.includes("Cụm")) && !sheetThon) {
+                        for(let cell of row) {
+                            if(cell && typeof cell === 'string' && (cell.includes("Thôn") || cell.includes("Cụm"))) {
+                                sheetThon = cell.replace(/Thôn\/bản\/TDP[:\s]*/gi, "").replace(/Thôn\/bản[:\s]*/gi, "").trim();
+                            }
+                        }
+                    }
+                }
+
+                if (!sheetXa) sheetXa = "Đông Trạch";
+                if (!sheetThon) sheetThon = "Hồng Đức";
+
+                globalSheetsMeta.set(tenNhomSheet, {
+                    xa: sheetXa,
+                    thon: sheetThon,
+                    tenNhom: sheetTenNhom
+                });
+
+                if (!sheetsMap.has(tenNhomSheet)) {
+                    sheetsMap.set(tenNhomSheet, []);
+                }
 
                 for (let i = 0; i < sheetData.length; i++) {
                     let row = sheetData[i];
@@ -486,17 +537,29 @@
                         let laiPhat    = parseFloat(row[13]) || 0;
                         let tongCong   = vonGocLai + tkbb + laiPhat;
 
-                        allRowsList.push({
+                        let memObj = {
                             sheetName: tenNhomSheet,
+                            sheetXa: sheetXa,
+                            sheetThon: sheetThon,
+                            sheetTenNhom: sheetTenNhom,
                             stt: stt, maTV: maTV, hoTen: hoTen,
                             duNoVonVay: duNoVonVay, soDuTkbb: soDuTkbb,
                             is12T, is15T, is18T, is24T, is30T,
                             vonGocLai: vonGocLai, tkbb: tkbb, laiPhat: laiPhat, tongCong: tongCong
-                        });
+                        };
+
+                        allRowsList.push(memObj);
+                        sheetsMap.get(tenNhomSheet).push(memObj);
 
                         let key = maTV !== '' ? `${tenNhomSheet}_${maTV}` : `${tenNhomSheet}_${hoTen}`;
                         if (!membersMap.has(key)) {
-                            membersMap.set(key, { sheetName: tenNhomSheet, stt: stt, maTV: maTV, hoTen: hoTen, loans: [] });
+                            membersMap.set(key, { 
+                                sheetName: tenNhomSheet, 
+                                sheetXa: sheetXa, 
+                                sheetThon: sheetThon, 
+                                sheetTenNhom: sheetTenNhom, 
+                                stt: stt, maTV: maTV, hoTen: hoTen, loans: [] 
+                            });
                         }
                         membersMap.get(key).loans.push({ duNoVonVay, soDuTkbb, vonGocLai, tkbb, laiPhat, tongCong });
                     }
@@ -505,6 +568,20 @@
 
             globalMembersData = allRowsList;
             globalGroupedData = Array.from(membersMap.values());
+
+            let selectGroupPDF = document.getElementById('selectGroupPDF');
+            let selectGroupPrint = document.getElementById('selectGroupPrint');
+            
+            let optionsHtml = '<option value="ALL">-- Tất cả các nhóm trong file --</option>';
+            sheetsMap.forEach((members, groupName) => {
+                if (members.length > 0) {
+                    let meta = globalSheetsMeta.get(groupName);
+                    optionsHtml += `<option value="${groupName}">Nhóm: ${meta ? meta.tenNhom : groupName}</option>`;
+                }
+            });
+
+            selectGroupPDF.innerHTML = optionsHtml;
+            selectGroupPrint.innerHTML = optionsHtml.replace("Tất cả các nhóm trong file", "In tất cả các nhóm (Mỗi nhóm 1 trang)");
 
             let bankId = document.getElementById('bankId').value.trim();
             let bankAcc = getSelectedBankAccount();
@@ -517,7 +594,6 @@
             }
 
             if (bankAcc) {
-                // CHỈ TẠO MÃ QR CHO THÀNH VIÊN CÓ TỔNG NỘP > 0
                 for (let mem of globalMembersData) {
                     if (mem.tongCong > 0) {
                         let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
@@ -613,12 +689,13 @@
             <td></td>
         </tr>`;
         tbody.innerHTML += totalTr;
-        
+
         document.getElementById('preview-section').style.display = 'block';
     }
 
-    // In Phiếu thu cá nhân
+    // In Phiếu thu cá nhân (Tự động lấy tên nhóm đã chọn làm tên file lưu)
     function generatePrintPDF() {
+        let selectedGroup = document.getElementById('selectGroupPDF').value;
         let bankAcc = getSelectedBankAccount();
         let groupLeaderName = document.getElementById('groupLeaderName').value.trim();
         
@@ -650,13 +727,17 @@
 
         let countPrinted = 0;
         globalGroupedData.forEach((mem) => {
+            if (selectedGroup !== "ALL" && mem.sheetName !== selectedGroup) return;
+
             let tongNopThanhToan = mem.loans.reduce((sum, l) => sum + l.tongCong, 0);
             if (tongNopThanhToan <= 0) return;
             countPrinted++;
 
             let docSo = docSoTien(tongNopThanhToan);
             let qrSrc = mem.qrBase64;
-            let tenNhomChuan = mem.sheetName;
+            let memXa = mem.sheetXa || "Đông Trạch";
+            let memThon = mem.sheetThon || "Hồng Đức";
+            let memNhom = mem.sheetTenNhom || mem.sheetName;
 
             let rowsHtml = '';
             mem.loans.forEach((loan) => {
@@ -707,9 +788,9 @@
                     <div class="sub-date">Ngày thu: ${metaInfo.ngayThu}</div>
 
                     <div class="diaban-row">
-                        <strong>Xã/Phường:</strong> ${metaInfo.xa} &nbsp;&nbsp;&nbsp;&nbsp; 
-                        <strong>Thôn/bản/TDP:</strong> ${metaInfo.thon} &nbsp;&nbsp;&nbsp;&nbsp; 
-                        <strong>Nhóm:</strong> ${tenNhomChuan}
+                        <strong>Xã/Phường:</strong> ${memXa} &nbsp;&nbsp;&nbsp;&nbsp; 
+                        <strong>Thôn/bản/TDP:</strong> ${memThon} &nbsp;&nbsp;&nbsp;&nbsp; 
+                        <strong>Nhóm:</strong> ${memNhom}
                     </div>
 
                     <div style="margin-bottom: 4px; font-size: 11pt;">
@@ -761,15 +842,15 @@
         });
 
         if (countPrinted === 0) {
-            alert("Không có thành viên nào có phát sinh số tiền nộp để xuất phiếu thu!");
+            alert("Không có thành viên nào có phát sinh số tiền nộp để xuất phiếu thu ở nhóm này!");
             let dynamicStyle = document.getElementById("dynamicPrintStyle");
             if (dynamicStyle) dynamicStyle.remove();
             return;
         }
 
-        let cleanXa = (metaInfo.xa || "").replace(/[\/\\?%*:|"<>]/g, '_');
-        let cleanThon = (metaInfo.thon || "").replace(/[\/\\?%*:|"<>]/g, '_');
-        let defaultFileName = `PhieuThu_${cleanXa}_${cleanThon}`.replace(/_+/g, '_');
+        // Tự động lấy tên nhóm làm tên file mặc định khi bấm Lưu/In
+        let groupNameForFile = selectedGroup === "ALL" ? "TatCaCacNhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
+        let defaultFileName = `PhieuThu_${groupNameForFile}`.replace(/_+/g, '_');
 
         let oldTitle = document.title;
         document.title = defaultFileName;
@@ -780,8 +861,9 @@
         if (dynamicStyle) dynamicStyle.remove();
     }
 
-    // In Bảng kê tổng hợp (Khổ ngang) chia theo từng nhóm / sheet
-    function generatePrintBangKe() {
+    // In Bảng kê tổng hợp (Tự động lấy tên nhóm đã chọn làm tên file lưu)
+    function generatePrintBangKeSelected() {
+        let selectedGroup = document.getElementById('selectGroupPrint').value;
         let bankAcc = getSelectedBankAccount();
         if(!bankAcc) {
             alert("Vui lòng chọn hoặc nhập số tài khoản ngân hàng nhận tiền!");
@@ -818,7 +900,16 @@
             sheetsMap.get(mem.sheetName).push(mem);
         });
 
+        let countPrinted = 0;
         sheetsMap.forEach((membersOfGroup, groupName) => {
+            if (selectedGroup !== "ALL" && groupName !== selectedGroup) return;
+            countPrinted++;
+
+            let meta = globalSheetsMeta.get(groupName);
+            let groupXa = meta ? meta.xa : "Đông Trạch";
+            let groupThon = meta ? meta.thon : "Hồng Đức";
+            let groupTenNhom = meta ? meta.tenNhom : groupName;
+
             let rowsHtml = '';
             let sumDuNo = 0, sumSoDuTkbb = 0, sumVon = 0, sumTkbb = 0, sumLaiPhat = 0, sumNop = 0;
 
@@ -882,9 +973,9 @@
 
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 8pt; border: none;">
                         <tr>
-                            <td style="border: none; text-align: left; width: 33%;"><strong>Xã/Phường:</strong> <i>${metaInfo.xa}</i></td>
-                            <td style="border: none; text-align: center; width: 34%;"><strong>Thôn/bản/TDP:</strong> <i>${metaInfo.thon}</i></td>
-                            <td style="border: none; text-align: right; width: 33%;"><strong><i>Nhóm: ${groupName}</i></strong></td>
+                            <td style="border: none; text-align: left; width: 33%;"><strong>Xã/Phường:</strong> <i>${groupXa}</i></td>
+                            <td style="border: none; text-align: center; width: 34%;"><strong>Thôn/bản/TDP:</strong> <i>${groupThon}</i></td>
+                            <td style="border: none; text-align: right; width: 33%;"><strong><i>${groupTenNhom}</i></strong></td>
                         </tr>
                     </table>
 
@@ -974,9 +1065,16 @@
             printArea.innerHTML += htmlBangKe;
         });
 
-        let cleanXa = (metaInfo.xa || "").replace(/[\/\\?%*:|"<>]/g, '_');
-        let cleanThon = (metaInfo.thon || "").replace(/[\/\\?%*:|"<>]/g, '_');
-        let defaultFileName = `BangKeThuTien_${cleanXa}_${cleanThon}_AllNhom`.replace(/_+/g, '_');
+        if (countPrinted === 0) {
+            alert("Không tìm thấy dữ liệu nhóm phù hợp để in!");
+            let dynamicStyle = document.getElementById("dynamicPrintStyle");
+            if (dynamicStyle) dynamicStyle.remove();
+            return;
+        }
+
+        // Tự động lấy tên nhóm làm tên file mặc định khi bấm Lưu/In
+        let groupNameForFile = selectedGroup === "ALL" ? "TatCaCacNhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
+        let defaultFileName = `BangKeThuTien_${groupNameForFile}`.replace(/_+/g, '_');
 
         let oldTitle = document.title;
         document.title = defaultFileName;
@@ -994,7 +1092,7 @@
             return;
         }
 
-        let folderPath = `📁 Thư mục toàn thôn: ${metaInfo.xa} / ${metaInfo.thon} (Đã tổng hợp các nhóm)`;
+        let folderPath = `📁 Thư mục toàn thôn: (Đã tổng hợp các nhóm)`;
         document.getElementById('folderTitle').innerText = folderPath;
 
         let container = document.getElementById('qrCardsList');
@@ -1054,7 +1152,7 @@
         }
 
         let totalGroupAmount = globalMembersData.reduce((sum, mem) => sum + mem.tongCong, 0);
-        let message = `Kính gửi anh/chị ${leaderName ? leaderName : 'Nhóm trưởng'},\n\nBảng kê thu tiền vốn, lãi và tiết kiệm tổng hợp (${metaInfo.xa} - ${metaInfo.thon}) với tổng số tiền cần nộp là: ${totalGroupAmount.toLocaleString('vi-VN')} VNĐ đã sẵn sàng.\n\nNhờ anh/chị triển khai thu hộ các thành viên giúp em nhé. Xin cảm ơn!`;
+        let message = `Kính gửi anh/chị ${leaderName ? leaderName : 'Nhóm trưởng'},\n\nBảng kê thu tiền vốn, lãi và tiết kiệm tổng hợp với tổng số tiền cần nộp là: ${totalGroupAmount.toLocaleString('vi-VN')} VNĐ đã sẵn sàng.\n\nNhờ anh/chị triển khai thu hộ các thành viên giúp em nhé. Xin cảm ơn!`;
 
         let zaloUrl = `https://zalo.me/${leaderPhone}?text=${encodeURIComponent(message)}`;
         window.open(zaloUrl, '_blank');
