@@ -48,24 +48,39 @@
             margin: 5mm;
         }
 
-        @media print {
-            body { background: white; margin: 0; padding: 0; }
-            #input-screen { display: none !important; }
-            .print-area { display: block !important; width: 100%; }
-            .phieu-container { 
-                width: 100% !important; margin: 0 auto !important; padding: 5mm 0 !important; 
-                font-family: 'Times New Roman', Times, serif; font-size: 11pt; box-sizing: border-box; 
-                background: #fff; page-break-after: always; break-after: page; break-inside: avoid;
-            }
-            .bangke-print-container {
-                width: 100% !important; margin: 0 auto !important; padding: 2mm 0 !important;
-                font-family: 'Times New Roman', Times, serif; font-size: 8pt; box-sizing: border-box;
-                background: #fff; page-break-after: always; break-after: page; break-inside: avoid;
-            }
-        }
+       
 
-        .phieu-container { width: 190mm; margin: auto; padding: 10mm; font-family: 'Times New Roman', Times, serif; font-size: 11pt; box-sizing: border-box; background: #fff; }
-        .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+@media print {
+    body { background: white; margin: 0; padding: 0; }
+    #input-screen { display: none !important; }
+    .print-area { display: block !important; width: 100%; }
+    
+    .bangke-print-container {
+        width: 100% !important; margin: 0 auto !important; padding: 2mm 0 !important;
+        font-family: 'Times New Roman', Times, serif; font-size: 8pt; box-sizing: border-box;
+        background: #fff; page-break-after: always; break-after: page; break-inside: avoid;
+    }
+    
+    /* Ép cột chứa mã QR có chiều rộng thoải mái hơn và canh giữa chuẩn */
+    .print-tbl td img {
+        width: 75px !important;
+        height: 85px !important;
+        max-width: none !important;
+    }
+}
+
+       .phieu-container { 
+    width: 190mm; 
+    margin: auto; 
+    padding: 10mm; 
+    font-family: 'Times New Roman', Times, serif; 
+    font-size: 11pt; 
+    box-sizing: border-box; 
+    background: #fff; 
+    page-break-after: always; /* Thêm dòng này để ép ngắt trang sau mỗi phiếu */
+    break-after: page;        /* Hỗ trợ cho các trình duyệt hiện đại */
+}
+		.header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
         .title-phieu { text-align: center; font-size: 15pt; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; }
         .sub-date { text-align: center; font-style: italic; font-size: 11pt; margin-bottom: 10px; }
         .diaban-row { text-align: center; font-size: 11pt; margin-bottom: 8px; }
@@ -88,7 +103,15 @@
     </style>
 </head>
 <body>
-
+<!-- Màn hình khóa mã nguồn / Cài đặt bảo mật -->
+<div id="lockScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+    <div style="background: #fff; padding: 30px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="color: #0275d8; margin-top: 0;">🔒 HỆ THỐNG ĐÃ ĐƯỢC KHÓA</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Vui lòng nhập mật khẩu quản trị để tiếp tục sử dụng ứng dụng.</p>
+        <input type="password" id="unlockPassword" placeholder="Nhập mật khẩu..." style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; text-align: center; margin-bottom: 15px;">
+        <button onclick="checkUnlockPassword()" style="width: 100%; background-color: #0275d8; color: white; padding: 10px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer;">Mở Khóa</button>
+    </div>
+</div>
 <div class="container" id="input-screen">
     <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ MÃ QR VIETQR</h2>
     
@@ -941,8 +964,8 @@
                 sumLaiPhat += mem.laiPhat;
                 sumNop += mem.tongCong;
 
-                let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 45px; height: 50px; object-fit: contain;">` : '';
-
+                // Thay đổi từ 45px/50px cũ thành kích thước lớn hơn rõ nét hơn:
+let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75px; height: 85px; object-fit: contain; display: block; margin: auto;">` : '';
                 rowsHtml += `
                     <tr>
                         <td>${mem.stt}</td>
@@ -1177,7 +1200,36 @@
         let zaloUrl = `https://zalo.me/${leaderPhone}?text=${encodeURIComponent(message)}`;
         window.open(zaloUrl, '_blank');
     }
+	// Đặt mật khẩu mở khóa tại đây (Ví dụ: "hung2026" hoặc tùy ý anh thay đổi)
+const APP_PASSWORD = "admin@123"
+
+function checkUnlockPassword() {
+    let inputPass = document.getElementById('unlockPassword').value;
+    if (inputPass === APP_PASSWORD) {
+        // Ẩn màn hình khóa đi, hiện ứng dụng chính
+        document.getElementById('lockScreen').style.display = 'none';
+    } else {
+        alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
+        document.getElementById('unlockPassword').value = '';
+        document.getElementById('unlockPassword').focus();
+    }
+}
+
+// Cho phép bấm phím Enter để mở khóa nhanh
+document.addEventListener("DOMContentLoaded", () => {
+    let passInput = document.getElementById('unlockPassword');
+    if(passInput) {
+        passInput.focus();
+        passInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkUnlockPassword();
+            }
+        });
+    }
+});
+	
 </script>
+
 
 </body>
 </html>
