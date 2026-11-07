@@ -101,13 +101,30 @@
 </head>
 <body>
 
-<!-- Màn hình khóa mã nguồn / Cài đặt bảo mật -->
+<!-- Màn hình đăng nhập & chọn Phòng nghiệp vụ -->
 <div id="lockScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-    <div style="background: #fff; padding: 30px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-        <h3 style="color: #0275d8; margin-top: 0;">🔒 HỆ THỐNG ĐÃ ĐƯỢC KHÓA</h3>
-        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Vui lòng nhập mật khẩu quản trị để tiếp tục sử dụng ứng dụng.</p>
-        <input type="password" id="unlockPassword" placeholder="Nhập mật khẩu..." style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; text-align: center; margin-bottom: 15px;">
-        <button onclick="checkUnlockPassword()" style="width: 100%; background-color: #0275d8; color: white; padding: 10px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer;">Mở Khóa</button>
+    <div style="background: #fff; padding: 30px; border-radius: 8px; width: 380px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="color: #0275d8; margin-top: 0;">🔒 ĐĂNG NHẬP HỆ THỐNG</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Vui lòng chọn Phòng nghiệp vụ và nhập mật khẩu.</p>
+        
+        <div style="text-align: left; margin-bottom: 12px;">
+            <label style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Phòng giao dịch / Nghiệp vụ:</label>
+            <select id="selectPhongNghiepVu" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                <option value="LE_THUY">Phòng Nghiệp vụ số 01 (Lệ Thủy)</option>
+                <option value="QUANG_NINH">Phòng Nghiệp vụ số 01 (Quảng Ninh)</option>
+                <option value="DONG_HOI">Phòng Nghiệp vụ số 02 (Đồng Hới)</option>
+                <option value="BO_TRACH">Phòng Nghiệp vụ số 02 (Bố Trạch)</option>
+                <option value="QUANG_TRACH">Phòng Nghiệp vụ số 03 (Quảng Trạch)</option>
+                <option value="TUYEN_HOA">Phòng Nghiệp vụ số 03 (Tuyên Hóa)</option>
+            </select>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Mật khẩu quản trị:</label>
+            <input type="password" id="unlockPassword" placeholder="Nhập mật khẩu..." style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; text-align: center;">
+        </div>
+
+        <button onclick="checkUnlockPassword()" style="width: 100%; background-color: #0275d8; color: white; padding: 11px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer;">Mở Khóa Hệ Thống</button>
     </div>
 </div>
 
@@ -122,29 +139,8 @@
         <div>
             <label>Số Tài Khoản Nhận Tiền:</label>
             <select id="bankAcc" onchange="checkCustomAccount(this)">
-                <option value="3802201009020">3802201009020 (QUY_LE THUY)</option>
-                <option value="3802201009007">3802201009007 (KOICA_LE THUY)</option>
-                <option value="3802201008900">3802201008900 (TCVM_LE THUY)</option>
-                <option value="3802201009479">3802201009479 (IFAD_LE THUY)</option>
-                <option value="3803201006233">3803201006233 (QUY_QUANG NINH)</option>
-                <option value="3803201006148">3803201006148 (KOICA_QUANG NINH)</option>
-                <option value="3803201006660">3803201006660 (TCVM_QUANG NINH)</option>
-                <option value="3803201006828">3803201006828 (IFAD_QUANG NINH)</option>
-                <option value="3807201003630">3807201003630 (QUY_DONG HOI)</option>
-                <option value="3807201003783">3807201003783 (TCVM_DONG HOI)</option>
-                <option value="3801201009448">3801201009448 (QUY_BO TRACH)</option>
-                <option value="3801201009402">3801201009402 (KOICA_BO TRACH)</option>
-                <option value="3801201010460">3801201010460 (TCVM_BO TRACH)</option>
-                <option value="3801201010981">3801201010981 (IFAD_BO TRACH)</option>
-                <option value="3804201009358">3804201009358 (QUY_QUẢNG TRACH)</option>
-                <option value="3804201009341">3804201009341 (KOICA_QUANG TRACH)</option>
-                <option value="3804201009227">3804201009227 (TCVM_QUANG TRACH)</option>
-                <option value="3804201010080">3804201010080 (IFAD_QUANG TRACH)</option>
-                <option value="3805201006135">3805201006135 (QUY_TUYEN HOA)</option>
-                <option value="3805201005835">3805201005835 (KOICA_TUYEN HOA)</option>
-                <option value="3805201005943">3805201005943 (TCVM_TUYEN HOA)</option>
-                <option value="3805201008370">3805201008370 (IFAD_TUYEN HOA)</option>
-                <option value="CUSTOM">➕ Nhập số tài khoản khác...</option>
+                <!-- Được tự động cập nhật theo Phòng Nghiệp vụ khi đăng nhập -->
+            </select>
             <input type="text" id="customBankAcc" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
         </div>
         <div>
@@ -271,12 +267,97 @@
         chuKyCuoi: "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ"
     };
 
+    // Danh mục tài khoản phân loại theo từng Phòng Nghiệp vụ
+    const ACCOUNTS_BY_PHONG = {
+        LE_THUY: [
+            { value: "3802201009020", label: "3802201009020 (QUY_LE THUY)" },
+            { value: "3802201009007", label: "3802201009007 (KOICA_LE THUY)" },
+            { value: "3802201008900", label: "3802201008900 (TCVM_LE THUY)" },
+            { value: "3802201009479", label: "3802201009479 (IFAD_LE THUY)" }
+        ],
+        QUANG_NINH: [
+            { value: "3803201006233", label: "3803201006233 (QUY_QUANG NINH)" },
+            { value: "3803201006148", label: "3803201006148 (KOICA_QUANG NINH)" },
+            { value: "3803201006660", label: "3803201006660 (TCVM_QUANG NINH)" },
+            { value: "3803201006828", label: "3803201006828 (IFAD_QUANG NINH)" }
+        ],
+        DONG_HOI: [
+            { value: "3807201003630", label: "3807201003630 (QUY_DONG HOI)" },
+            { value: "3807201003783", label: "3807201003783 (TCVM_DONG HOI)" }
+        ],
+        BO_TRACH: [
+            { value: "3801201009448", label: "3801201009448 (QUY_BO TRACH)" },
+            { value: "3801201009402", label: "3801201009402 (KOICA_BO TRACH)" },
+            { value: "3801201010460", label: "3801201010460 (TCVM_BO TRACH)" },
+            { value: "3801201010981", label: "3801201010981 (IFAD_BO TRACH)" }
+        ],
+        QUANG_TRACH: [
+            { value: "3804201009358", label: "3804201009358 (QUY_QUẢNG TRACH)" },
+            { value: "3804201009341", label: "3804201009341 (KOICA_QUANG TRACH)" },
+            { value: "3804201009227", label: "3804201009227 (TCVM_QUANG TRACH)" },
+            { value: "3804201010080", label: "3804201010080 (IFAD_QUANG TRACH)" }
+        ],
+        TUYEN_HOA: [
+            { value: "3805201006135", label: "3805201006135 (QUY_TUYEN HOA)" },
+            { value: "3805201005835", label: "3805201005835 (KOICA_TUYEN HOA)" },
+            { value: "3805201005943", label: "3805201005943 (TCVM_TUYEN HOA)" },
+            { value: "3805201008370", label: "3805201008370 (IFAD_TUYEN HOA)" }
+        ]
+    };
+
+    function updateBankAccountOptions(phongKey) {
+        let bankSelect = document.getElementById('bankAcc');
+        if (!bankSelect) return;
+
+        let list = ACCOUNTS_BY_PHONG[phongKey] || [];
+        let html = '';
+
+        list.forEach(acc => {
+            html += `<option value="${acc.value}">${acc.label}</option>`;
+        });
+        html += `<option value="CUSTOM">➕ Nhập số tài khoản khác...</option>`;
+
+        bankSelect.innerHTML = html;
+        checkCustomAccount(bankSelect);
+    }
+
+    const APP_PASSWORD = "admin@123";
+
+    function checkUnlockPassword() {
+        let inputPass = document.getElementById('unlockPassword').value;
+        let selectedPhong = document.getElementById('selectPhongNghiepVu').value;
+
+        if (inputPass === "1812" || inputPass === "admin" || inputPass === "quytuink" || inputPass === "hungnb" || inputPass === APP_PASSWORD) {
+            updateBankAccountOptions(selectedPhong);
+            
+            let selectElem = document.getElementById('selectPhongNghiepVu');
+            let selectedText = selectElem.options[selectElem.selectedIndex].text;
+            metaInfo.chiNhanh = selectedText;
+
+            document.getElementById('lockScreen').style.display = 'none';
+        } else {
+            alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
+            document.getElementById('unlockPassword').value = '';
+            document.getElementById('unlockPassword').focus();
+        }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         let dateObj = new Date();
         let year = dateObj.getFullYear();
         let month = String(dateObj.getMonth() + 1).padStart(2, '0');
         let day = String(dateObj.getDate()).padStart(2, '0');
         document.getElementById('inputNgayThu').value = `${year}-${month}-${day}`;
+
+        let passInput = document.getElementById('unlockPassword');
+        if(passInput) {
+            passInput.focus();
+            passInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    checkUnlockPassword();
+                }
+            });
+        }
     });
 
     function checkCustomAccount(selectObj) {
@@ -403,7 +484,6 @@
         return cleanText;
     }
 
-    // ĐỌC TẤT CẢ CÁC SHEET VÀ TRÍCH TÁCH THÔNG TIN XÃ, THÔN, NHÓM TỪ FILE EXCEL
     document.getElementById('excelFile').addEventListener('change', async function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -413,7 +493,11 @@
             let data = new Uint8Array(e.target.result);
             let workbook = XLSX.read(data, {type: 'array'});
             
-            metaInfo = { tenDonVi: "", chiNhanh: "", mauSo: "", xa: "", thon: "", ngayThu: "", chuKyCuoi: "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ" };
+            metaInfo.tenDonVi = "";
+            metaInfo.mauSo = "";
+            metaInfo.xa = "";
+            metaInfo.thon = "";
+            metaInfo.chuKyCuoi = "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ";
             globalSheetsMeta.clear();
 
             let firstSheetName = workbook.SheetNames.length > 1 && workbook.SheetNames[0] === 'ThamSo' ? workbook.SheetNames[1] : workbook.SheetNames[0];
@@ -434,15 +518,11 @@
                         if (i < 3 && (lower.includes("quỹ") || lower.includes("chương trình") || lower.includes("tài chính vi mô")) && !metaInfo.tenDonVi) {
                             metaInfo.tenDonVi = text;
                         }
-                        if (lower.includes("phòng") || lower.includes("chi nhánh") || lower.includes("đơn vị:")) {
-                            if (!metaInfo.chiNhanh) metaInfo.chiNhanh = text.replace(/^Đơn vị[:\s]*/gi, '').trim();
-                        }
                     }
                 });
             }
 
             if (!metaInfo.tenDonVi) metaInfo.tenDonVi = "Chương trình tài chính vi mô Hỗ trợ phụ nữ Quảng Bình";
-            if (!metaInfo.chiNhanh) metaInfo.chiNhanh = "Phòng Nghiệp vụ số 01 (Lệ Thủy)";
             if (!metaInfo.mauSo) metaInfo.mauSo = "13/TCVM";
 
             let sigParts = [];
@@ -473,8 +553,6 @@
 
             if (sigParts.length > 0) {
                 metaInfo.chuKyCuoi = sigParts.join("<br>");
-            } else {
-                metaInfo.chuKyCuoi = "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ";
             }
 
             let allRowsList = [];
@@ -617,7 +695,6 @@
             }
 
             if (bankAcc) {
-                // Gán trực tiếp URL VietQR vào qrBase64, loại bỏ hàm canvas giúp load cực nhanh và không bao giờ lỗi
                 for (let mem of globalMembersData) {
                     if (mem.tongCong > 0) {
                         let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
@@ -719,7 +796,6 @@
         document.getElementById('preview-section').style.display = 'block';
     }
 
-    // In Phiếu thu cá nhân
     function generatePrintPDF() {
         let selectedGroup = document.getElementById('selectGroupPDF').value;
         let bankAcc = getSelectedBankAccount();
@@ -886,7 +962,6 @@
         if (dynamicStyle) dynamicStyle.remove();
     }
 
-    // In Bảng kê tổng hợp
     function generatePrintBangKeSelected() {
         let selectedGroup = document.getElementById('selectGroupPrint').value;
         let bankAcc = getSelectedBankAccount();
@@ -1153,7 +1228,6 @@
         if (event.target === modal) { modal.style.display = 'none'; }
     }
 
-    // Tự động load lại ảnh nếu gặp sự cố mạng chập chờn
     document.addEventListener("error", function (event) {
         if (event.target.tagName.toLowerCase() === 'img' && (event.target.classList.contains('thumb-qr') || event.target.closest('.qr-card') || event.target.closest('.phieu-container'))) {
             let currentSrc = event.target.src;
@@ -1181,31 +1255,6 @@
         let zaloUrl = `https://zalo.me/${leaderPhone}?text=${encodeURIComponent(message)}`;
         window.open(zaloUrl, '_blank');
     }
-
-    const APP_PASSWORD = "admin@123";
-
-    function checkUnlockPassword() {
-        let inputPass = document.getElementById('unlockPassword').value;
-        if (inputPass === APP_PASSWORD) {
-            document.getElementById('lockScreen').style.display = 'none';
-        } else {
-            alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
-            document.getElementById('unlockPassword').value = '';
-            document.getElementById('unlockPassword').focus();
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        let passInput = document.getElementById('unlockPassword');
-        if(passInput) {
-            passInput.focus();
-            passInput.addEventListener("keypress", function(event) {
-                if (event.key === "Enter") {
-                    checkUnlockPassword();
-                }
-            });
-        }
-    });
 </script>
 
 </body>
