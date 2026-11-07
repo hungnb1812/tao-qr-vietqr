@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Thu Tiền & BẢNG KÊ  AN SINH MÃ QR VIETQR</title>
+    <!-- Thư viện đọc Excel (SheetJS) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 1200px; width: 95%; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
+        h2 { color: #0275d8; text-align: center; margin-bottom: 25px; }
+        .upload-section { border: 2px dashed #6f42c1; padding: 25px; text-align: center; border-radius: 6px; background: #fbf8ff; margin-bottom: 20px; }
+        .config-box { background: #f1f1f1; padding: 20px; border-radius: 6px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .config-box label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+        .config-box input, .config-box select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        
+        table.preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        table.preview-table th, table.preview-table td { border: 1px solid #ddd; padding: 8px 6px; text-align: left; vertical-align: middle; }
+        table.preview-table th { background-color: #0275d8; color: white; text-align: center; vertical-align: middle; }
+        
+        .thumb-qr { width: 45px; height: 50px; object-fit: contain; cursor: pointer; border: 1px solid #ccc; background: #fff; padding: 2px; border-radius: 3px; display: block; margin: auto; transition: transform 0.2s; }
+        .thumb-qr:hover { transform: scale(1.8); }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        button { background-color: #5cb85c; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; flex: 1; min-width: 220px; }
+        button.btn-blue { background-color: #0275d8; }
+        button.btn-orange { background-color: #f0ad4e; }
+        button.btn-purple { background-color: #6f42c1; }
+        button.btn-zalo { background-color: #0068ff; }
+        button:hover { opacity: 0.9; }
+        
+        .folder-view { margin-top: 25px; background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 6px; display: none; }
+        .qr-card { display: inline-block; border: 1px solid #ddd; padding: 10px; margin: 8px; text-align: center; border-radius: 6px; background: #fff; width: 262px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .qr-card img { width: 100%; height: 310px; border: 1px solid #eee; padding: 2px; object-fit: contain; background: #fff; cursor: pointer; }
+
+        /* Modal Popup xem ảnh lớn */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); text-align: center; }
+        .modal-content { margin: 5vh auto; max-width: 480px; width: 90%; background: #fff; padding: 20px; border-radius: 8px; position: relative; }
+        .modal-content img { width: 100%; height: auto; border: 1px solid #ddd; }
+        .close-btn { color: #aaa; position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn:hover { color: #000; }
+
+        .print-area { display: none; }
+        @page { margin: 5mm; }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            #input-screen { display: none !important; }
+            .print-area { display: block !important; width: 100%; }
+        }
+
+        .phieu-container { 
+            width: 190mm; margin: auto; padding: 10mm; 
+            font-family: 'Times New Roman', Times, serif; font-size: 11pt; 
+            box-sizing: border-box; background: #fff; 
+            page-break-after: always; break-after: page; 
+        }
+        .title-phieu { text-align: center; font-size: 15pt; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; }
+        .sub-date { text-align: center; font-style: italic; font-size: 11pt; margin-bottom: 10px; }
+        .diaban-row { text-align: center; font-size: 11pt; margin-bottom: 8px; }
+        .tbl-chitiet { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .tbl-chitiet th, .tbl-chitiet td { border: 1px solid #000; padding: 6px 8px; text-align: center; }
+        .tbl-chitiet th { background: #f2f2f2; font-weight: bold; }
+        
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
+    </style>
+</head>
+<body>
+
+<!-- Màn hình đăng nhập & chọn Phòng nghiệp vụ -->
+<div id="lockScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+    <div style="background: #fff; padding: 30px; border-radius: 8px; width: 380px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="color: #0275d8; margin-top: 0;">🔒 ĐĂNG NHẬP HỆ THỐNG</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Vui lòng chọn Phòng nghiệp vụ và nhập mật khẩu.</p>
+        
+        <div style="text-align: left; margin-bottom: 12px;">
+            <label style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Phòng giao dịch / Nghiệp vụ:</label>
+            <select id="selectPhongNghiepVu" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                <option value="LE_THUY">Phòng Nghiệp vụ số 01 (Lệ Thủy)</option>
+                <option value="QUANG_NINH">Phòng Nghiệp vụ số 01 (Quảng Ninh)</option>
+                <option value="DONG_HOI">Phòng Nghiệp vụ số 02 (Đồng Hới)</option>
+                <option value="BO_TRACH">Phòng Nghiệp vụ số 02 (Bố Trạch)</option>
+                <option value="QUANG_TRACH">Phòng Nghiệp vụ số 03 (Quảng Trạch)</option>
+                <option value="TUYEN_HOA">Phòng Nghiệp vụ số 03 (Tuyên Hóa)</option>
+            </select>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Mật khẩu quản trị:</label>
+            <input type="password" id="unlockPassword" placeholder="Nhập mật khẩu..." style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; text-align: center;">
+        </div>
+
+        <button onclick="checkUnlockPassword()" style="width: 100%; background-color: #0275d8; color: white; padding: 11px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer;">Mở Khóa Hệ Thống</button>
+    </div>
+</div>
+
+<div class="container" id="input-screen">
+    <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ AN SINH MÃ QR VIETQR</h2>
+    
+    <div class="config-box">
+        <div>
+            <label>Mã Ngân Hàng (VD: MB, VCB, BIDV, Agribank):</label>
+            <input type="text" id="bankId" value="Agribank">
+        </div>
+        <div>
+            <label>Số Tài Khoản Nhận Tiền:</label>
+            <select id="bankAcc" onchange="checkCustomAccount(this)">
+                <!-- Được tự động lọc và nạp theo Phòng nghiệp vụ chọn khi đăng nhập -->
+            </select>
+            <input type="text" id="customBankAcc" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
+        </div>
+        <div>
+            <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
+            <input type="text" id="bankAccName" value="QUY HO TRO PHU NU PT TINH QUANG TRỊ">
+        </div>
+        <div>
+            <label>Nội dung chuyển khoản mẫu:</label>
+            <input type="text" id="contentPrefix" value="[Mã TV] [Họ tên] nop tien">
+        </div>
+        <div>
+            <label>Họ và tên Nhóm trưởng:</label>
+            <input type="text" id="groupLeaderName" value="">
+        </div>
+        <div>
+            <label>Số điện thoại Zalo Nhóm trưởng:</label>
+            <input type="text" id="groupLeaderPhone" value="">
+        </div>
+        <div>
+            <label>Ngày thu tiền:</label>
+            <input type="date" id="inputNgayThu">
+        </div>
+        <div>
+            <label>Logo Quỹ (Chèn vào góc trái):</label>
+            <input type="file" id="logoFile" accept="image/*" style="padding: 4px;">
+        </div>
+    </div>
+
+    <div class="upload-section">
+        <h3>Chọn File Bảng Kê Excel (.xls / .xlsx)</h3>
+        <input type="file" id="excelAnSinhFile" accept=".xlsx, .xls" style="margin-top: 10px;">
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">Hệ thống tự động dò tìm tên Chương trình, Phòng nghiệp vụ từ file Excel.</p>
+    </div>
+
+    <div id="preview-section" style="display:none;">
+        <h3>Xem trước tổng hợp thành viên (<span id="rowCount">0</span> thành viên)</h3>
+        <div style="max-height: 380px; overflow-y: auto;">
+            <table class="preview-table" id="previewTable">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên Nhóm / Sheet</th>
+                        <th>Mã TV</th>
+                        <th>Họ và Tên</th>
+                        <th>Số Sổ</th>
+                        <th>Số Dư / Thông Tin</th>
+                        <th>Số Tiền Thu (VNĐ)</th>
+                        <th>Mã QR VietQR</th>
+                    </tr>
+                </thead>
+                <tbody id="previewBody"></tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 15px; background: #eef5ff; padding: 15px; border-radius: 6px; border: 1px solid #bce8f1;">
+            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #0275d8;">📥 Tùy chọn xuất Phiếu Thu / In ấn:</label>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="selectGroupPDF" style="flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px;">
+                    <option value="ALL">-- Tất cả các nhóm trong file --</option>
+                </select>
+                <button class="btn-blue" onclick="generatePrintPDF()" style="flex: 1; min-width: 200px; padding: 11px; margin: 0;">📥 Xuất Phiếu Thu / Bảng Kê PDF</button>
+            </div>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách thẻ QR toàn thôn</button>
+            <button class="btn-zalo" onclick="sendZaloToGroupLeader()">📲 Gửi Zalo Nhóm Trưởng</button>
+        </div>
+
+        <div class="folder-view" id="folderViewContainer">
+            <h3 id="folderTitle" style="color: #0275d8; margin-top: 0;"></h3>
+            <div id="qrCardsList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Popup Xem Ảnh Lớn -->
+<div id="imageModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3 id="modalTitle" style="margin-top: 0; color: #0275d8; font-size: 16px;"></h3>
+        <img id="modalImg" src="" alt="QR Phóng to">
+        <div style="margin-top: 15px;">
+            <a id="modalDownloadBtn" href="" download="" style="display:inline-block; padding:8px 20px; background:#0275d8; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold; font-size:14px;">💾 Tải ảnh QR này</a>
+        </div>
+    </div>
+</div>
+
+<div class="print-area" id="printArea"></div>
+
+<script>
+    let globalMembersData = [];
+    let globalGroupedData = []; 
+    let logoBase64 = "";
+    let dynamicReportTitle = "PHIẾU THU TIỀN";
+
+    // Cấu hình tài khoản theo từng Phòng Nghiệp vụ
+    const ACCOUNTS_BY_PHONG = {
+        LE_THUY: [
+            { value: "3802201009020", label: "3802201009020 (QUY_LE THUY)" },
+            { value: "3802201009007", label: "3802201009007 (KOICA_LE THUY)" },
+            { value: "3802201008900", label: "3802201008900 (TCVM_LE THUY)" },
+            { value: "3802201009479", label: "3802201009479 (IFAD_LE THUY)" }
+        ],
+        QUANG_NINH: [
+            { value: "3803201006233", label: "3803201006233 (QUY_QUANG NINH)" },
+            { value: "3803201006148", label: "3803201006148 (KOICA_QUANG NINH)" },
+            { value: "3803201006660", label: "3803201006660 (TCVM_QUANG NINH)" },
+            { value: "3803201006828", label: "3803201006828 (IFAD_QUANG NINH)" }
+        ],
+        DONG_HOI: [
+            { value: "3807201003630", label: "3807201003630 (QUY_DONG HOI)" },
+            { value: "3807201003783", label: "3807201003783 (TCVM_DONG HOI)" }
+        ],
+        BO_TRACH: [
+            { value: "3801201009448", label: "3801201009448 (QUY_BO TRACH)" },
+            { value: "3801201009402", label: "3801201009402 (KOICA_BO TRACH)" },
+            { value: "3801201010460", label: "3801201010460 (TCVM_BO TRACH)" },
+            { value: "3801201010981", label: "3801201010981 (IFAD_BO TRACH)" }
+        ],
+        QUANG_TRACH: [
+            { value: "3804201009358", label: "3804201009358 (QUY_QUẢNG TRACH)" },
+            { value: "3804201009341", label: "3804201009341 (KOICA_QUANG TRACH)" },
+            { value: "3804201009227", label: "3804201009227 (TCVM_QUANG TRACH)" },
+            { value: "3804201010080", label: "3804201010080 (IFAD_QUANG TRACH)" }
+        ],
+        TUYEN_HOA: [
+            { value: "3805201006135", label: "3805201006135 (QUY_TUYEN HOA)" },
+            { value: "3805201005835", label: "3805201005835 (KOICA_TUYEN HOA)" },
+            { value: "3805201005943", label: "3805201005943 (TCVM_TUYEN HOA)" },
+            { value: "3805201008370", label: "3805201008370 (IFAD_TUYEN HOA)" }
+        ]
+    };
+
+    function updateBankAccountOptions(phongKey) {
+        let bankSelect = document.getElementById('bankAcc');
+        if (!bankSelect) return;
+
+        let list = ACCOUNTS_BY_PHONG[phongKey] || [];
+        let html = '';
+
+        list.forEach(acc => {
+            html += `<option value="${acc.value}">${acc.label}</option>`;
+        });
+        html += `<option value="CUSTOM">➕ Nhập số tài khoản khác...</option>`;
+
+        bankSelect.innerHTML = html;
+        checkCustomAccount(bankSelect);
+    }
+
+    const APP_PASSWORD = "admin@123";
+
+    function checkUnlockPassword() {
+        let inputPass = document.getElementById('unlockPassword').value;
+        let selectedPhong = document.getElementById('selectPhongNghiepVu').value;
+
+        if (inputPass === "1812" || inputPass === "admin" || inputPass === "quytuink" || inputPass === "hungnb" || inputPass === APP_PASSWORD) {
+            updateBankAccountOptions(selectedPhong);
+            document.getElementById('lockScreen').style.display = 'none';
+        } else {
+            alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
+            document.getElementById('unlockPassword').value = '';
+            document.getElementById('unlockPassword').focus();
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        let dateObj = new Date();
+        let year = dateObj.getFullYear();
+        let month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        let day = String(dateObj.getDate()).padStart(2, '0');
+        document.getElementById('inputNgayThu').value = `${year}-${month}-${day}`;
+
+        let passInput = document.getElementById('unlockPassword');
+        if(passInput) {
+            passInput.focus();
+            passInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    checkUnlockPassword();
+                }
+            });
+        }
+    });
+
+    document.getElementById('logoFile').addEventListener('change', function(e) {
+        let file = e.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(evt) { logoBase64 = evt.target.result; };
+            reader.readAsDataURL(file);
+        } else { logoBase64 = ""; }
+    });
+
+    function checkCustomAccount(selectObj) {
+        let customInput = document.getElementById('customBankAcc');
+        if (selectObj.value === 'CUSTOM') {
+            customInput.style.display = 'block';
+            customInput.focus();
+        } else {
+            customInput.style.display = 'none';
+            customInput.value = '';
+        }
+    }
+
+    function getSelectedBankAccount() {
+        let selectVal = document.getElementById('bankAcc').value;
+        if (selectVal === 'CUSTOM') { return document.getElementById('customBankAcc').value.trim(); }
+        return selectVal.trim();
+    }
+
+    function removeVietnameseTones(str) {
+        if (!str) return "";
+        str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+        str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+        str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+        str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+        str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+        str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+        str = str.replace(/đ/g, "d");
+        return str;
+    }
+
+    function docSoTien(soTien) {
+        if (soTien === 0) return "Không đồng";
+        const ChuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+        const Tien = ["", "nghìn", "triệu", "tỷ"];
+
+        function docBlock3So(num, isHighest) {
+            let tram = Math.floor(num / 100);
+            let chuc = Math.floor((num % 100) / 10);
+            let donVi = num % 10;
+            let str = "";
+            if (tram > 0 || !isHighest) {
+                str += ChuSo[tram] + " trăm ";
+                if (chuc === 0 && donVi > 0) str += "lẻ ";
+            }
+            if (chuc > 1) {
+                str += ChuSo[chuc] + " mươi ";
+                if (donVi === 1) str += "mốt ";
+                else if (donVi === 5) str += "lăm ";
+                else if (donVi > 0) str += ChuSo[donVi] + " ";
+            } else if (chuc === 1) {
+                str += "mười ";
+                if (donVi === 1) str += "một ";
+                else if (donVi === 5) str += "lăm ";
+                else if (donVi > 0) str += ChuSo[donVi] + " ";
+            } else if (chuc === 0 && donVi > 0 && tram > 0) {
+                if (donVi === 5) str += "lăm ";
+                else str += ChuSo[donVi] + " ";
+            }
+            return str.trim();
+        }
+
+        let strSo = Math.abs(soTien).toString();
+        let i = 0, kq = [];
+        while (strSo.length > 0) {
+            let len = strSo.length;
+            let chunk = parseInt(strSo.substring(Math.max(0, len - 3), len), 10);
+            strSo = strSo.substring(0, Math.max(0, len - 3));
+            if (chunk > 0) {
+                let blockStr = docBlock3So(chunk, strSo.length === 0);
+                if (Tien[i]) blockStr += " " + Tien[i];
+                kq.unshift(blockStr);
+            }
+            i++;
+        }
+        let finalStr = kq.join(" ").replace(/\s+/g, ' ').trim();
+        return finalStr.charAt(0).toUpperCase() + finalStr.slice(1) + " đồng";
+    }
+
+    async function getBase64FromImageUrl(url) {
+        return new Promise((resolve) => {
+            let img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = function () {
+                let canvas = document.createElement("canvas");
+                canvas.width = img.width; canvas.height = img.height;
+                let ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL("image/png"));
+            };
+            img.onerror = function () { resolve(url); };
+            img.src = url;
+        });
+    }
+
+    document.getElementById('excelAnSinhFile').addEventListener('change', async function(e) {
+        let file = e.target.files[0];
+        if (!file) return;
+        let reader = new FileReader();
+        
+        reader.onload = async function(e) {
+            let workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+            globalMembersData = [];
+            let sheetsMap = new Map();
+
+            let targetSheetName = workbook.SheetNames.find(s => s.toLowerCase() !== 'thamso') || workbook.SheetNames[0];
+            let firstWs = workbook.Sheets[targetSheetName];
+            let firstData = XLSX.utils.sheet_to_json(firstWs, {header: 1});
+
+            let detectedDonVi = "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ";
+            let selectElem = document.getElementById('selectPhongNghiepVu');
+            let detectedChiNhanh = selectElem ? selectElem.options[selectElem.selectedIndex].text : "Phòng Nghiệp vụ số 01 (Lệ Thủy)";
+            let detectedMauSo = "Mẫu số: 38/TD";
+
+            for (let r = 0; r < Math.min(8, firstData.length); r++) {
+                let row = firstData[r];
+                if (!row) continue;
+                row.forEach(cell => {
+                    if (cell && typeof cell === 'string') {
+                        let text = cell.trim();
+                        let upper = text.toUpperCase();
+                        
+                        if (upper.includes("QUỸ HỖ TRỢ") || upper.includes("CHƯƠNG TRÌNH TÀI CHÍNH VI MÔ") || upper.includes("TÀI CHÍNH VI MÔ")) {
+                            if (!upper.includes("PHÒNG") && !upper.includes("CHI NHÁNH")) {
+                                detectedDonVi = text;
+                            }
+                        }
+                        if (upper.includes("PHÒNG NGHIỆP VỤ") || upper.includes("CHI NHÁNH") || upper.includes("PHÒNG GD")) {
+                            detectedChiNhanh = text;
+                        }
+                        if (upper.includes("MẪU SỐ")) {
+                            detectedMauSo = text;
+                        }
+                        if (upper.includes("BẢNG KÊ")) {
+                            dynamicReportTitle = text;
+                        }
+                    }
+                });
+            }
+
+            workbook.SheetNames.forEach(sheetName => {
+                if (sheetName.toLowerCase() === 'thamso') return;
+                let ws = workbook.Sheets[sheetName];
+                let sheetData = XLSX.utils.sheet_to_json(ws, {header: 1});
+                let tenNhomSheet = sheetName.trim();
+
+                let sheetXa = "Xã Lệ Thủy", sheetThon = "Thôn Hồng Thủy";
+                let groupMemberMap = new Map();
+
+                for (let i = 0; i < sheetData.length; i++) {
+                    let row = sheetData[i];
+                    if (!row) continue;
+                    row.forEach(cell => {
+                        if (cell && typeof cell === 'string') {
+                            let text = cell.trim();
+                            if (text.includes("Xã")) sheetXa = text.replace(/Xã\/Phường[:\s]*/gi, "").trim();
+                            if (text.includes("Thôn") || text.includes("Cụm")) sheetThon = text.replace(/Thôn\/Bản\/TDP[:\s]*/gi, "").trim();
+                        }
+                    });
+
+                    if (row[0] && !isNaN(row[0]) && row[2]) {
+                        let stt = row[0];
+                        let maTV = String(row[1] || '').trim();
+                        let hoTen = String(row[2] || '').trim();
+                        let soSo = String(row[3] || '').trim();
+                        let soDu = parseFloat(row[4]) || 0;
+                        let tongCong = parseFloat(row[5]) || parseFloat(row[10]) || 0;
+
+                        if (groupMemberMap.has(maTV)) {
+                            let existing = groupMemberMap.get(maTV);
+                            existing.soDuTkbb += soDu;
+                            existing.tongCong += tongCong;
+                            if (soSo) {
+                                existing.soSoList.push(soSo);
+                                existing.soDuList.push(soDu);
+                                existing.tongCongList.push(tongCong);
+                            }
+                        } else {
+                            let memObj = {
+                                sheetName: tenNhomSheet, sheetXa: sheetXa, sheetThon: sheetThon,
+                                donVi: detectedDonVi, chiNhanh: detectedChiNhanh, mauSo: detectedMauSo,
+                                stt: stt, maTV: maTV, hoTen: hoTen, soSo: soSo, soDuTkbb: soDu, tongCong: tongCong,
+                                soSoList: [soSo], soDuList: [soDu], tongCongList: [tongCong]
+                            };
+                            groupMemberMap.set(maTV, memObj);
+                        }
+                    }
+                }
+
+                groupMemberMap.forEach((memObj) => {
+                    globalMembersData.push(memObj);
+                    if (!sheetsMap.has(tenNhomSheet)) sheetsMap.set(tenNhomSheet, []);
+                    sheetsMap.get(tenNhomSheet).push(memObj);
+                });
+            });
+
+            let selectGroupPDF = document.getElementById('selectGroupPDF');
+            let optionsHtml = '<option value="ALL">-- Tất cả các nhóm trong file --</option>';
+            sheetsMap.forEach((members, groupName) => {
+                optionsHtml += `<option value="${groupName}">Nhóm: ${groupName}</option>`;
+            });
+            selectGroupPDF.innerHTML = optionsHtml;
+
+            let bankId = document.getElementById('bankId').value.trim();
+            let bankAcc = getSelectedBankAccount();
+            let bankAccName = document.getElementById('bankAccName').value.trim();
+
+            for (let mem of globalMembersData) {
+                if (mem.tongCong > 0) {
+                    let addInfoStr = `${mem.maTV} ${removeVietnameseTones(mem.hoTen)} nop tien`.trim();
+                    let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${mem.tongCong}&addInfo=${encodeURIComponent(addInfoStr)}&accountName=${encodeURIComponent(bankAccName)}`;
+                    mem.qrBase64 = await getBase64FromImageUrl(printUrl);
+                } else {
+                    mem.qrBase64 = "";
+                }
+            }
+
+            displayPreview(globalMembersData);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function displayPreview(data) {
+        let tbody = document.getElementById('previewBody');
+        tbody.innerHTML = '';
+        document.getElementById('rowCount').innerText = data.length;
+        
+        data.forEach((mem) => {
+            let combinedSoSo = mem.soSoList ? mem.soSoList.join('<br>') : (mem.soSo || '-');
+            let qrCellHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" class="thumb-qr" onclick="openModal('${mem.qrBase64}', '${mem.hoTen}')" title="Xem lớn">` : 'Không có';
+            let tr = `<tr>
+                <td class="text-center">${mem.stt}</td>
+                <td style="font-weight: bold; color: #0275d8;">${mem.sheetName}</td>
+                <td class="text-center">${mem.maTV}</td>
+                <td>${mem.hoTen}</td>
+                <td class="text-center"><strong>${combinedSoSo}</strong></td>
+                <td class="text-right">${mem.soDuTkbb > 0 ? mem.soDuTkbb.toLocaleString('vi-VN') : '-'}</td>
+                <td class="text-right" style="color: #d9534f; font-weight: bold;">${mem.tongCong > 0 ? mem.tongCong.toLocaleString('vi-VN') : '-'}</td>
+                <td class="text-center">${qrCellHtml}</td>
+            </tr>`;
+            tbody.innerHTML += tr;
+        });
+
+        document.getElementById('preview-section').style.display = 'block';
+    }
+
+    function generatePrintPDF(targetGroup = null) {
+        let selectedGroup = targetGroup || document.getElementById('selectGroupPDF').value;
+        let bankAcc = getSelectedBankAccount();
+        if(!bankAcc) { alert("Vui lòng chọn số tài khoản ngân hàng!"); return; }
+
+        let rawDateVal = document.getElementById('inputNgayThu').value;
+        let ngayThuFormatted = "Ngày ... tháng ... năm ......";
+        if (rawDateVal) {
+            let parts = rawDateVal.split('-');
+            if (parts.length === 3) {
+                ngayThuFormatted = `Ngày ${parts[2]} tháng ${parts[1]} năm ${parts[0]}`;
+            }
+        }
+
+        let printArea = document.getElementById('printArea');
+        printArea.innerHTML = '';
+
+        if (selectedGroup && selectedGroup !== "ALL") {
+            document.title = selectedGroup;
+        } else {
+            document.title = "TatCa_Cac_Nhom";
+        }
+
+        globalMembersData.forEach((mem) => {
+            if (selectedGroup !== "ALL" && mem.sheetName !== selectedGroup) return;
+            if (mem.tongCong <= 0) return;
+
+            let docSo = docSoTien(mem.tongCong);
+            let logoTag = logoBase64 ? `<img src="${logoBase64}" style="max-height: 48px; width: auto; object-fit: contain; margin-right: 12px; vertical-align: middle;">` : '';
+
+            let rowsHtml = '';
+            let listSoSo = mem.soSoList && mem.soSoList.length > 0 ? mem.soSoList : [mem.soSo];
+            let listSoDu = mem.soDuList && mem.soDuList.length > 0 ? mem.soDuList : [mem.soDuTkbb];
+            let listTong = mem.tongCongList && mem.tongCongList.length > 0 ? mem.tongCongList : [mem.tongCong];
+
+            for (let idx = 0; idx < listSoSo.length; idx++) {
+                rowsHtml += `
+                    <tr>
+                        <td class="text-center" style="font-weight: bold;">${listSoSo[idx] || '---'}</td>
+                        <td class="text-right">${(listSoDu[idx] || 0).toLocaleString('vi-VN')}</td>
+                        <td class="text-right" style="font-weight: bold;">${(listTong[idx] || 0).toLocaleString('vi-VN')}</td>
+                    </tr>
+                `;
+            }
+
+            rowsHtml += `
+                <tr style="background-color: #f9f9f9; font-weight: bold;">
+                    <td class="text-center">TỔNG CỘNG</td>
+                    <td class="text-right">${mem.soDuTkbb.toLocaleString('vi-VN')}</td>
+                    <td class="text-right" style="color: #d9534f; font-size: 12pt;">${mem.tongCong.toLocaleString('vi-VN')}</td>
+                </tr>
+            `;
+
+            let formattedChiNhanh = mem.chiNhanh;
+            if (formattedChiNhanh.includes("Phòng")) {
+                formattedChiNhanh = formattedChiNhanh.replace("Phòng", "<br>Phòng");
+            } else if (formattedChiNhanh.includes("_")) {
+                formattedChiNhanh = formattedChiNhanh.replace("_", "<br>");
+            }
+
+            let htmlPhieu = `
+                <div class="phieu-container">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
+                        <tr>
+                            <td style="width: 78%; text-align: left; vertical-align: middle;">
+                                <div style="display: flex; align-items: center;">
+                                    ${logoTag}
+                                    <div>
+                                        <div style="font-weight: bold; font-size: 10pt; line-height: 1.2;">${mem.donVi}</div>
+                                        <div style="font-size: 9.5pt; line-height: 1.3; margin-top: 2px;">${formattedChiNhanh}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="width: 22%; text-align: right; vertical-align: top; font-size: 10pt;">
+                                <div>${mem.mauSo}</div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="title-phieu">${dynamicReportTitle}</div>
+                    <div class="sub-date">${ngayThuFormatted}</div>
+                    <div class="diaban-row">
+                        <strong>Xã:</strong> ${mem.sheetXa} &nbsp;&nbsp;&nbsp;&nbsp; 
+                        <strong>Thôn:</strong> ${mem.sheetThon} &nbsp;&nbsp;&nbsp;&nbsp; 
+                        <strong>Nhóm:</strong> ${mem.sheetName}
+                    </div>
+                    <div style="margin-bottom: 6px;">
+                        <strong>Mã TV:</strong> ${mem.maTV} &nbsp;&nbsp;&nbsp;&nbsp; 
+                        <strong>Họ tên:</strong> ${mem.hoTen}
+                    </div>
+                    
+                    <table class="tbl-chitiet">
+                        <tr>
+                            <th style="width: 20%;">Số sổ</th>
+                            <th style="width: 40%;">Số dư TKBB An Sinh</th>
+                            <th style="width: 40%;">Số tiền nộp (Kế hoạch)</th>
+                        </tr>
+                        ${rowsHtml}
+                    </table>
+
+                    <div style="margin-bottom: 20px;"><strong>Số tiền bằng chữ:</strong> <i>${docSo}</i></div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 10pt; font-weight: bold; margin-bottom: 4px;">MÃ QR CHUYỂN KHOẢN VIETQR (GỒM TẤT CẢ CÁC SỔ)</div>
+                        <img src="${mem.qrBase64}" style="width: 220px; height: 250px; border: 1px solid #ccc; padding: 4px;">
+                    </div>
+                </div>
+            `;
+            printArea.innerHTML += htmlPhieu;
+        });
+
+        window.print();
+    }
+
+    function openModal(imgSrc, titleText) {
+        document.getElementById('modalImg').src = imgSrc;
+        document.getElementById('modalTitle').innerText = titleText;
+        document.getElementById('imageModal').style.display = 'block';
+    }
+    function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
+    function renderFolderView() {
+        let container = document.getElementById('qrCardsList');
+        container.innerHTML = '';
+        globalMembersData.forEach(mem => {
+            if (mem.tongCong > 0 && mem.qrBase64) {
+                let card = document.createElement('div');
+                card.className = 'qr-card';
+                card.innerHTML = `
+                    <div style="font-weight: bold; font-size: 13px; color: #0275d8; margin-bottom: 3px;">${mem.hoTen}</div>
+                    <div style="font-size: 11px; color: #666; margin-bottom: 5px;">Mã TV: ${mem.maTV} | ${mem.sheetName}</div>
+                    <img src="${mem.qrBase64}" onclick="openModal('${mem.qrBase64}', '${mem.hoTen}')">
+                    <div style="font-weight: bold; font-size: 12px; color: #d9534f; margin-top: 5px;">${mem.tongCong.toLocaleString('vi-VN')} VNĐ</div>
+                `;
+                container.appendChild(card);
+            }
+        });
+        document.getElementById('folderViewContainer').style.display = 'block';
+    }
+    function sendZaloToGroupLeader() {
+        let phone = document.getElementById('groupLeaderPhone').value.trim();
+        if (!phone) { alert("Vui lòng nhập SĐT Zalo Nhóm trưởng!"); return; }
+        window.open(`https://zalo.me/${phone.replace(/\D/g, '')}`, '_blank');
+    }
+</script>
+</body>
+</html>
