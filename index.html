@@ -48,39 +48,36 @@
             margin: 5mm;
         }
 
-       
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            #input-screen { display: none !important; }
+            .print-area { display: block !important; width: 100%; }
+            
+            .bangke-print-container {
+                width: 100% !important; margin: 0 auto !important; padding: 2mm 0 !important;
+                font-family: 'Times New Roman', Times, serif; font-size: 8pt; box-sizing: border-box;
+                background: #fff; page-break-after: always; break-after: page; break-inside: avoid;
+            }
+            
+            .print-tbl td img {
+                width: 75px !important;
+                height: 85px !important;
+                max-width: none !important;
+            }
+        }
 
-@media print {
-    body { background: white; margin: 0; padding: 0; }
-    #input-screen { display: none !important; }
-    .print-area { display: block !important; width: 100%; }
-    
-    .bangke-print-container {
-        width: 100% !important; margin: 0 auto !important; padding: 2mm 0 !important;
-        font-family: 'Times New Roman', Times, serif; font-size: 8pt; box-sizing: border-box;
-        background: #fff; page-break-after: always; break-after: page; break-inside: avoid;
-    }
-    
-    /* Ép cột chứa mã QR có chiều rộng thoải mái hơn và canh giữa chuẩn */
-    .print-tbl td img {
-        width: 75px !important;
-        height: 85px !important;
-        max-width: none !important;
-    }
-}
-
-       .phieu-container { 
-    width: 190mm; 
-    margin: auto; 
-    padding: 10mm; 
-    font-family: 'Times New Roman', Times, serif; 
-    font-size: 11pt; 
-    box-sizing: border-box; 
-    background: #fff; 
-    page-break-after: always; /* Thêm dòng này để ép ngắt trang sau mỗi phiếu */
-    break-after: page;        /* Hỗ trợ cho các trình duyệt hiện đại */
-}
-		.header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        .phieu-container { 
+            width: 190mm; 
+            margin: auto; 
+            padding: 10mm; 
+            font-family: 'Times New Roman', Times, serif; 
+            font-size: 11pt; 
+            box-sizing: border-box; 
+            background: #fff; 
+            page-break-after: always; 
+            break-after: page;        
+        }
+        .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
         .title-phieu { text-align: center; font-size: 15pt; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; }
         .sub-date { text-align: center; font-style: italic; font-size: 11pt; margin-bottom: 10px; }
         .diaban-row { text-align: center; font-size: 11pt; margin-bottom: 8px; }
@@ -103,6 +100,7 @@
     </style>
 </head>
 <body>
+
 <!-- Màn hình khóa mã nguồn / Cài đặt bảo mật -->
 <div id="lockScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center;">
     <div style="background: #fff; padding: 30px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
@@ -112,6 +110,7 @@
         <button onclick="checkUnlockPassword()" style="width: 100%; background-color: #0275d8; color: white; padding: 10px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer;">Mở Khóa</button>
     </div>
 </div>
+
 <div class="container" id="input-screen">
     <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ MÃ QR VIETQR</h2>
     
@@ -145,9 +144,7 @@
                 <option value="3805201005835">3805201005835 (KOICA_TUYEN HOA)</option>
                 <option value="3805201005943">3805201005943 (TCVM_TUYEN HOA)</option>
                 <option value="3805201008370">3805201008370 (IFAD_TUYEN HOA)</option>
-                
                 <option value="CUSTOM">➕ Nhập số tài khoản khác...</option>
-            </select>
             <input type="text" id="customBankAcc" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
         </div>
         <div>
@@ -394,23 +391,6 @@
         return finalStr.charAt(0).toUpperCase() + finalStr.slice(1) + " đồng";
     }
 
-    async function getBase64FromImageUrl(url) {
-        return new Promise((resolve) => {
-            let img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = function () {
-                let canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
-                let ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL("image/png"));
-            };
-            img.onerror = function () { resolve(url); };
-            img.src = url;
-        });
-    }
-
     function formatChiNhanhHtml(text) {
         if (!text) return "";
         let cleanText = text.replace(/^Đơn vị[:\s]*/gi, '').trim();
@@ -637,6 +617,7 @@
             }
 
             if (bankAcc) {
+                // Gán trực tiếp URL VietQR vào qrBase64, loại bỏ hàm canvas giúp load cực nhanh và không bao giờ lỗi
                 for (let mem of globalMembersData) {
                     if (mem.tongCong > 0) {
                         let hoTenKhongDau = removeVietnameseTones(mem.hoTen);
@@ -651,7 +632,8 @@
 
                         let addInfo = encodeURIComponent(formattedAddInfo.trim());
                         let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${mem.tongCong}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
-                        mem.qrBase64 = await getBase64FromImageUrl(printUrl);
+                        
+                        mem.qrBase64 = printUrl; 
                     } else {
                         mem.qrBase64 = "";
                     }
@@ -672,7 +654,8 @@
 
                         let addInfo = encodeURIComponent(formattedAddInfo.trim());
                         let printUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${tongNopThanhToan}&addInfo=${addInfo}&accountName=${encodeURIComponent(bankAccName)}`;
-                        memGroup.qrBase64 = await getBase64FromImageUrl(printUrl);
+                        
+                        memGroup.qrBase64 = printUrl;
                     } else {
                         memGroup.qrBase64 = "";
                     }
@@ -736,7 +719,7 @@
         document.getElementById('preview-section').style.display = 'block';
     }
 
-    // In Phiếu thu cá nhân (Tự động lấy tên nhóm đã chọn làm tên file lưu)
+    // In Phiếu thu cá nhân
     function generatePrintPDF() {
         let selectedGroup = document.getElementById('selectGroupPDF').value;
         let bankAcc = getSelectedBankAccount();
@@ -891,7 +874,6 @@
             return;
         }
 
-        // Tự động lấy tên nhóm làm tên file mặc định khi bấm Lưu/In
         let groupNameForFile = selectedGroup === "ALL" ? "TatCaCacNhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
         let defaultFileName = `PhieuThu_${groupNameForFile}`.replace(/_+/g, '_');
 
@@ -904,7 +886,7 @@
         if (dynamicStyle) dynamicStyle.remove();
     }
 
-    // In Bảng kê tổng hợp (Tự động lấy tên nhóm đã chọn làm tên file lưu)
+    // In Bảng kê tổng hợp
     function generatePrintBangKeSelected() {
         let selectedGroup = document.getElementById('selectGroupPrint').value;
         let bankAcc = getSelectedBankAccount();
@@ -964,8 +946,7 @@
                 sumLaiPhat += mem.laiPhat;
                 sumNop += mem.tongCong;
 
-                // Thay đổi từ 45px/50px cũ thành kích thước lớn hơn rõ nét hơn:
-let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75px; height: 85px; object-fit: contain; display: block; margin: auto;">` : '';
+                let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75px; height: 85px; object-fit: contain; display: block; margin: auto;">` : '';
                 rowsHtml += `
                     <tr>
                         <td>${mem.stt}</td>
@@ -1038,32 +1019,32 @@ let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75p
                                 <th rowspan="2" style="width: 7.5%;">Mã QR</th>
                             </tr>
                             <tr>
-                                <th style="width: 9%;">Dư nợ vốn vay<br>(Gốc + lãi)</th>
-                                <th style="width: 8%;">Số dư gốc TKBB<br>hàng tháng</th>
+                                <th style="width: 8.5%;">Dư nợ vốn vay<br>(Gốc + lãi)</th>
+                                <th style="width: 8.5%;">Số dư gốc TKBB<br>hàng tháng</th>
                                 <th style="width: 2%;">12T</th>
                                 <th style="width: 2%;">15T</th>
                                 <th style="width: 2%;">18T</th>
                                 <th style="width: 2%;">24T</th>
-                                <th style="width: 5.5%;">Vốn<br>(gốc+lãi)</th>
+                                <th style="width: 5%;">Vốn (gốc+lãi)</th>
                                 <th style="width: 5%;">TKBB<br>hàng tháng</th>
-                                <th style="width: 4%;">Lãi<br>Phạt</th>
-                                <th style="width: 5.5%;">Tổng</th>
-                                <th style="width: 5.5%;">Vốn (gốc+lãi)</th>
-                                <th style="width: 5%;">TKBB hàng<br>tháng</th>
-                                <th style="width: 4%;">Lãi phạt</th>
-                                <th style="width: 4.5%;">Tổng</th>
+                                <th style="width: 5%;">Lãi phạt</th>
+                                <th style="width: 5%;">Tổng</th>
+                                <th style="width: 4.75%;">Vốn gốc</th>
+                                <th style="width: 4.75%;">Lãi vay</th>
+                                <th style="width: 4.75%;">TKBB<br>hàng tháng</th>
+                                <th style="width: 4.75%;">Tổng nộp</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${rowsHtml}
-                            <tr style="font-weight: bold; background-color: #fff;">
-                                <td colspan="3">Tổng cộng</td>
+                            <tr style="font-weight: bold; background: #fff;">
+                                <td colspan="3" style="text-align: center;">Cộng</td>
                                 <td style="text-align: right; padding-right: 3px;">${sumDuNo.toLocaleString('vi-VN')}</td>
                                 <td style="text-align: right; padding-right: 3px;">${sumSoDuTkbb.toLocaleString('vi-VN')}</td>
                                 <td></td><td></td><td></td><td></td>
                                 <td style="text-align: right; padding-right: 3px;">${sumVon.toLocaleString('vi-VN')}</td>
                                 <td style="text-align: right; padding-right: 3px;">${sumTkbb.toLocaleString('vi-VN')}</td>
-                                <td style="text-align: right; padding-right: 3px;">-</td>
+                                <td style="text-align: right; padding-right: 3px;">${sumLaiPhat.toLocaleString('vi-VN')}</td>
                                 <td style="text-align: right; padding-right: 3px;">${sumNop.toLocaleString('vi-VN')}</td>
                                 <td></td><td></td><td></td><td></td>
                                 <td></td>
@@ -1072,52 +1053,40 @@ let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75p
                         </tbody>
                     </table>
 
-                    <div style="margin-top: 6px; font-size: 8pt; line-height: 1.3;">
-                        <div><strong>Tổng số tiền dự thu bằng chữ:</strong> <i>${tongTienChu}.</i></div>
-                        <div style="margin-top: 2px;"><strong>Tổng số tiền thực thu bằng chữ:</strong> ............................................................................................................................................................................</div>
+                    <div style="margin-top: 4px; font-size: 8pt;">
+                        <strong>Số tiền thu thực tế (bằng chữ):</strong> <i>${tongTienChu}</i>
                     </div>
 
-                    <div style="margin-top: 10px; width: 100%;">
-                        <table style="width: 100%; border: none; text-align: center; font-size: 7.5pt;">
-                            <tr>
-                                <td style="border: none; width: 20%; vertical-align: top;">
-                                    <div style="font-weight: bold;">Nhóm trưởng/Người nộp tiền</div>
-                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                                </td>
-                                <td style="border: none; width: 20%; vertical-align: top;">
-                                    <div style="font-weight: bold;">Cán bộ tín dụng</div>
-                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                                </td>
-                                <td style="border: none; width: 20%; vertical-align: top;">
-                                    <div style="font-weight: bold;">Cán bộ thu tiền</div>
-                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                                </td>
-                                <td style="border: none; width: 20%; vertical-align: top;">
-                                    <div style="font-weight: bold;">Trưởng/Phó phòng Nghiệp vụ</div>
-                                    <div style="font-style: italic; font-size: 7pt;">(Ký, họ tên)</div>
-                                </td>
-                                <td style="border: none; width: 20%; vertical-align: top;">
-                                    <div style="font-weight: bold;">${metaInfo.chuKyCuoi}</div>
-                                    <div style="font-style: italic; font-size: 7pt;">(Ký, đóng dấu và ghi rõ họ tên)</div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
+                    <table style="width: 100%; margin-top: 8px; border-collapse: collapse; text-align: center; font-size: 8pt; border: none; page-break-inside: avoid;">
+                        <tr>
+                            <td style="width: 33%; vertical-align: top; border: none;">
+                                <strong>CÁN BỘ CỤM/XÃ</strong><br>
+                                <i>(Ký, họ tên)</i>
+                            </td>
+                            <td style="width: 34%; vertical-align: top; border: none;">
+                                <strong>NHÓM TRƯỞNG</strong><br>
+                                <i>(Ký, họ tên)</i>
+                            </td>
+                            <td style="width: 33%; vertical-align: top; border: none;">
+                                <strong>${metaInfo.chuKyCuoi}</strong><br>
+                                <i>(Ký, họ tên, đóng dấu)</i>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             `;
             printArea.innerHTML += htmlBangKe;
         });
 
         if (countPrinted === 0) {
-            alert("Không tìm thấy dữ liệu nhóm phù hợp để in!");
+            alert("Không có dữ liệu bảng kê cho nhóm đã chọn!");
             let dynamicStyle = document.getElementById("dynamicPrintStyle");
             if (dynamicStyle) dynamicStyle.remove();
             return;
         }
 
-        // Tự động lấy tên nhóm làm tên file mặc định khi bấm Lưu/In
         let groupNameForFile = selectedGroup === "ALL" ? "TatCaCacNhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
-        let defaultFileName = `BangKeThuTien_${groupNameForFile}`.replace(/_+/g, '_');
+        let defaultFileName = `BangKe_${groupNameForFile}`.replace(/_+/g, '_');
 
         let oldTitle = document.title;
         document.title = defaultFileName;
@@ -1184,6 +1153,18 @@ let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75p
         if (event.target === modal) { modal.style.display = 'none'; }
     }
 
+    // Tự động load lại ảnh nếu gặp sự cố mạng chập chờn
+    document.addEventListener("error", function (event) {
+        if (event.target.tagName.toLowerCase() === 'img' && (event.target.classList.contains('thumb-qr') || event.target.closest('.qr-card') || event.target.closest('.phieu-container'))) {
+            let currentSrc = event.target.src;
+            setTimeout(() => {
+                if(!currentSrc.includes('retry=1')) {
+                    event.target.src = currentSrc + (currentSrc.includes('?') ? '&' : '?') + 'retry=1';
+                }
+            }, 1000);
+        }
+    }, true);
+
     function sendZaloToGroupLeader() {
         let leaderName = document.getElementById('groupLeaderName').value.trim();
         let leaderPhone = document.getElementById('groupLeaderPhone').value.trim().replace(/[^0-9]/g, '');
@@ -1200,36 +1181,32 @@ let qrColHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" style="width: 75p
         let zaloUrl = `https://zalo.me/${leaderPhone}?text=${encodeURIComponent(message)}`;
         window.open(zaloUrl, '_blank');
     }
-	// Đặt mật khẩu mở khóa tại đây (Ví dụ: "hung2026" hoặc tùy ý anh thay đổi)
-const APP_PASSWORD = "admin@123"
 
-function checkUnlockPassword() {
-    let inputPass = document.getElementById('unlockPassword').value;
-    if (inputPass === APP_PASSWORD) {
-        // Ẩn màn hình khóa đi, hiện ứng dụng chính
-        document.getElementById('lockScreen').style.display = 'none';
-    } else {
-        alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
-        document.getElementById('unlockPassword').value = '';
-        document.getElementById('unlockPassword').focus();
-    }
-}
+    const APP_PASSWORD = "admin@123";
 
-// Cho phép bấm phím Enter để mở khóa nhanh
-document.addEventListener("DOMContentLoaded", () => {
-    let passInput = document.getElementById('unlockPassword');
-    if(passInput) {
-        passInput.focus();
-        passInput.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                checkUnlockPassword();
-            }
-        });
+    function checkUnlockPassword() {
+        let inputPass = document.getElementById('unlockPassword').value;
+        if (inputPass === APP_PASSWORD) {
+            document.getElementById('lockScreen').style.display = 'none';
+        } else {
+            alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
+            document.getElementById('unlockPassword').value = '';
+            document.getElementById('unlockPassword').focus();
+        }
     }
-});
-	
+
+    document.addEventListener("DOMContentLoaded", () => {
+        let passInput = document.getElementById('unlockPassword');
+        if(passInput) {
+            passInput.focus();
+            passInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    checkUnlockPassword();
+                }
+            });
+        }
+    });
 </script>
-
 
 </body>
 </html>
