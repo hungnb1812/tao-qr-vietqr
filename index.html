@@ -1,2139 +1,1293 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Thu Tiền & Kế Hoạch Trả Nợ - Tài Chính Vi Mô</title>
-    <!-- Thư viện SheetJS đọc Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <style>
-        * { box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { margin: 0; background-color: #f4f7f6; color: #333; padding-bottom: 40px; }
-        @media print {
-    /* Ẩn hoàn toàn các nút bấm, khung nhập liệu hoặc menu điều khiển khi in */
-    .no-print {
-        display: none !important;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cấu hình Ngân hàng & Lập Bảng Kế Hoạch Trả Nợ Thành Viên</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-}
-        /* Tab Navigation Bar */
-        .tab-nav {
-            display: flex;
-            background-color: #0275d8;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 15px 10px;
-            background-color: #337ab7;
-            color: white;
-            border: none;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            transition: background 0.2s;
-            border-right: 1px solid rgba(255,255,255,0.2);
-        }
-        .tab-btn:hover { background-color: #286090; }
-        .tab-btn.active {
-            background-color: #ffffff;
-            color: #0275d8;
-            border-bottom: 4px solid #0275d8;
-        }
+    body {
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-        .tab-content { display: none; padding: 20px; max-width: 1200px; margin: 20px auto; }
-        .tab-content.active { display: block; }
+    /* MODAL ĐĂNG NHẬP / CHỌN PHÒNG BAN ĐẦU */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .login-box {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      text-align: center;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .login-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0284c7;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .login-subtitle {
+      font-size: 13.5px;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .login-form-group {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+    .login-form-group label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .login-form-group select,
+    .login-form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      outline: none;
+      background-color: #fff;
+    }
+    .login-form-group select:focus,
+    .login-form-group input:focus {
+      border-color: #0284c7;
+    }
+    .btn-login-submit {
+      width: 100%;
+      background-color: #0284c7;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background-color 0.2s;
+    }
+    .btn-login-submit:hover {
+      background-color: #0369a1;
+    }
 
-        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #0275d8; text-align: center; margin-bottom: 25px; }
-        
-        .upload-section { border: 2px dashed #0275d8; padding: 25px; text-align: center; border-radius: 6px; background: #f8fbff; margin-bottom: 20px; }
-        .upload-section.ansinh { border-color: #6f42c1; background: #fbf8ff; }
-        
-        .config-box { background: #f1f1f1; padding: 20px; border-radius: 6px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .config-box label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
-        .config-box input, .config-box select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        
-        table.preview-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-        table.preview-table th, table.preview-table td { border: 1px solid #ddd; padding: 8px 6px; text-align: left; vertical-align: middle; }
-        table.preview-table th { background-color: #0275d8; color: white; text-align: center; vertical-align: middle; }
-        
-        .thumb-qr { width: 45px; height: 50px; object-fit: contain; cursor: pointer; border: 1px solid #ccc; background: #fff; padding: 2px; border-radius: 3px; display: block; margin: auto; transition: transform 0.2s; }
-        .thumb-qr:hover { transform: scale(1.8); }
+    /* MAIN CONTAINER */
+    .container {
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 0 8px 8px 8px;
+      padding: 24px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 30px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #3b3086;
+      margin-bottom: 16px;
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title:first-child {
+      margin-top: 0;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px 24px;
+    }
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-weight: 700;
+      font-size: 13px;
+      color: #1a1a1a;
+    }
+    label span.required {
+      color: #e53e3e;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background-color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      border-color: #4f46e5;
+    }
+    .btn-submit {
+      background-color: #4f46e5;
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+      width: 100%;
+    }
+    .btn-submit:hover {
+      background-color: #4338ca;
+    }
+    
+    /* TAB STYLING */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 0;
+      padding-bottom: 0;
+      width: 100%;
+      max-width: 900px;
+      position: relative;
+      z-index: 1;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #4b5563;
+      background: #e5e7eb;
+      border: 1px solid #d1d5db;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active {
+      background: #4f46e5;
+      color: #ffffff;
+      border-color: #4f46e5;
+    }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        button { background-color: #5cb85c; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; flex: 1; min-width: 220px; }
-        button.btn-blue { background-color: #0275d8; }
-        button.btn-orange { background-color: #f0ad4e; }
-        button.btn-purple { background-color: #6f42c1; }
-        button.btn-zalo { background-color: #0068ff; }
-        button:hover { opacity: 0.9; }
-        
-        .folder-view { margin-top: 25px; background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 6px; display: none; }
-        .qr-card { display: inline-block; border: 1px solid #ddd; padding: 10px; margin: 8px; text-align: center; border-radius: 6px; background: #fff; width: 262px; vertical-align: top; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .qr-card img { width: 100%; height: 310px; border: 1px solid #eee; padding: 2px; object-fit: contain; background: #fff; cursor: pointer; }
+    /* VÙNG HIỂN THỊ MÃ VIETQR */
+    .qr-result {
+      margin-top: 24px;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+      display: none;
+    }
+    .qr-result img {
+      max-width: 260px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .btn-download {
+      margin-top: 12px;
+      background-color: #10b981;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-block;
+      transition: background-color 0.2s;
+    }
+    .btn-download:hover {
+      background-color: #059669;
+    }
 
-        /* Modal Popup xem ảnh lớn */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); text-align: center; }
-        .modal-content { margin: 5vh auto; max-width: 480px; width: 90%; background: #fff; padding: 20px; border-radius: 8px; position: relative; }
-        .modal-content img { width: 100%; height: auto; border: 1px solid #ddd; }
-        .close-btn { color: #aaa; position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close-btn:hover { color: #000; }
+    /* KHUNG SẢN PHẨM PHỤ (MÓN 2, MÓN 3) */
+    .sub-loan-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+    .sub-loan-header {
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 12px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .print-area { display: none; }
+    /* BẢNG KẾ HOẠCH TRẢ NỢ A4 */
+    .schedule-container {
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 32px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      font-family: "Times New Roman", Times, serif;
+      display: none;
+      margin-bottom: 30px;
+    }
+    .schedule-header-layout {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .schedule-header-title {
+      flex: 1;
+      text-align: center;
+      padding-top: 10px;
+    }
+    .schedule-header-qr {
+      width: 110px;
+      text-align: right;
+    }
+    .schedule-header-qr img {
+      width: 100px;
+      height: 100px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .schedule-title {
+      font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 0 0 6px 0;
+    }
+    .schedule-subtitle {
+      font-size: 13px;
+      font-style: italic;
+      margin: 0;
+    }
+    
+    .plan-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    .plan-table th, .plan-table td {
+      border: 1px solid #000000;
+      padding: 5px 8px;
+      text-align: center;
+    }
+    .plan-table td.text-right {
+      text-align: right;
+    }
+    .plan-table td.text-left {
+      text-align: left;
+    }
+    .plan-table th {
+      font-weight: bold;
+      background-color: #ffffff;
+    }
+    
+    .signature-section {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+    }
+    .sig-box {
+      width: 45%;
+    }
+    .sig-title {
+      font-weight: bold;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .sig-subtitle {
+      font-size: 12px;
+      font-style: italic;
+    }
+    .sig-space {
+      height: 70px;
+    }
 
-        @media print {
-            body { background: white; margin: 0; padding: 0; }
-            .tab-nav, #lockScreen, .container { display: none !important; }
-            
-            /* Chỉ hiển thị print-area khi đang in từ Tab 1 hoặc Tab 2 */
-            body.printing-tab1-2 .print-area { display: block !important; width: 100%; }
-            body:not(.printing-tab1-2) .print-area { display: none !important; }
-            
-            .bangke-print-container {
-                width: 100% !important; margin: 0 auto !important; padding: 2mm 0 !important;
-                font-family: 'Times New Roman', Times, serif; font-size: 8pt; box-sizing: border-box;
-                background: #fff; page-break-after: always; break-after: page; break-inside: avoid;
-            }
+    .btn-print {
+      background-color: #2563eb;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-            .ansinh-print-container {
-                page-break-after: always;
-                break-after: page;
-                break-inside: avoid;
-            }
-            .ansinh-print-container:last-child {
-                page-break-after: auto;
-                break-after: auto;
-            }
-        }
-
-        .bangke-print-container { width: 280mm; margin: auto; padding: 2mm; font-family: 'Times New Roman', Times, serif; font-size: 8pt; box-sizing: border-box; background: #fff; }
-        .print-tbl { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 8pt; }
-        .print-tbl th, .print-tbl td { border: 1px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; }
-        .print-tbl th { background: #fff; font-weight: bold; }
-
-        .ansinh-print-container {
-            width: 190mm; 
-            max-height: 270mm;
-            margin: auto; 
-            padding: 5mm;
-            font-family: 'Times New Roman', Times, serif; 
-            font-size: 10pt;
-            box-sizing: border-box; 
-            background: #fff; 
-            overflow: hidden;
-        }
-
-        .header-logo-box { display: flex; align-items: center; gap: 10px; }
-        .header-logo-box img { max-height: 55px; width: auto; object-fit: contain; }
-
-        .text-right { text-align: right !important; }
-        .text-center { text-align: center !important; }
-        .text-left { text-align: left !important; }
-
-        /* Style Tab 3 */
-        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 24px; }
-        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-weight: 700; font-size: 13px; color: #1a1a1a; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; }
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
-        .schedule-container { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 32px; font-family: "Times New Roman", Times, serif; }
-        .schedule-header-layout { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .schedule-header-title { flex: 1; text-align: center; padding-top: 10px; }
-        .schedule-title { font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 6px 0; }
-        .schedule-subtitle { font-size: 13px; font-style: italic; margin: 0; }
-        .plan-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        .plan-table th, .plan-table td { border: 1px solid #000; padding: 5px 8px; text-align: center; }
-    </style>
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+      .modal-overlay, .container, .btn-print, .btn-download, .nav-tabs {
+        display: none !important;
+      }
+      .schedule-container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        width: 100%;
+        max-width: 100%;
+        page-break-after: always;
+      }
+      .qr-result {
+        display: block !important;
+        border: none;
+        padding: 0;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<!-- Màn hình đăng nhập & chọn Phòng nghiệp vụ -->
-<div id="lockScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-    <div style="background: #fff; padding: 30px; border-radius: 8px; width: 380px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-        <h3 style="color: #0275d8; margin-top: 0;">🔒 ĐĂNG NHẬP HỆ THỐNG</h3>
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Vui lòng chọn Phòng nghiệp vụ và nhập mật khẩu.</p>
-        
-        <div style="text-align: left; margin-bottom: 12px;">
-            <label style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Phòng giao dịch / Nghiệp vụ:</label>
-            <select id="selectPhongNghiepVu" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
-                <option value="LE_THUY">Phòng Nghiệp vụ số 01 (Lệ Thủy)</option>
-                <option value="QUANG_NINH">Phòng Nghiệp vụ số 01 (Quảng Ninh)</option>
-                <option value="DONG_HOI">Phòng Nghiệp vụ số 02 (Đồng Hới)</option>
-                <option value="BO_TRACH">Phòng Nghiệp vụ số 02 (Bố Trạch)</option>
-                <option value="QUANG_TRACH">Phòng Nghiệp vụ số 03 (Quảng Trạch)</option>
-                <option value="TUYEN_HOA">Phòng Nghiệp vụ số 03 (Tuyên Hóa)</option>
-            </select>
-        </div>
-
-        <div style="text-align: left; margin-bottom: 20px;">
-            <label style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 4px; display: block;">Mật khẩu quản trị:</label>
-            <input type="password" id="unlockPassword" placeholder="Nhập mật khẩu..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; text-align: center;">
-        </div>
-
-        <button onclick="checkUnlockPassword()" style="width: 100%; background-color: #0275d8; color: white; padding: 11px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer;">Mở Khóa Hệ Thống</button>
+<!-- MODAL ĐĂNG NHẬP BAN ĐẦU -->
+<div class="modal-overlay" id="loginModal">
+  <div class="login-box">
+    <div class="login-title">
+      🔒 ĐĂNG NHẬP HỆ THỐNG
     </div>
-</div>
-
-<!-- THANH ĐIỀU HƯỚNG TABS -->
-<div class="tab-nav" id="mainTabNav" style="display:none;">
-    <button class="tab-btn active" onclick="switchTab(1)">1. Thu Tiền & Bảng Kê VietQR</button>
-    <button class="tab-btn" onclick="switchTab(2)">2. Thu Tiền TKBB An Sinh</button>
-    <button class="tab-btn" onclick="switchTab(3)">3. Lập Kế Hoạch Trả Nợ & QR</button>
-</div>
-
-<!-- ================= CHỨC NĂNG 1 ================= -->
-<div id="tab1" class="tab-content active">
-    <div class="container">
-        <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ MÃ QR VIETQR</h2>
-        
-        <div class="config-box">
-            <div>
-                <label>Mã Ngân Hàng (VD: Agribank, MB):</label>
-                <input type="text" id="bankId_t1" value="Agribank" placeholder="Ví dụ: Agribank">
-            </div>
-            <div>
-                <label>Số Tài Khoản Nhận Tiền:</label>
-                <select id="bankAcc_t1" onchange="checkCustomAccount(this, 'customBankAcc_t1')"></select>
-                <input type="text" id="customBankAcc_t1" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
-            </div>
-            <div>
-                <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
-                <input type="text" id="bankAccName_t1" value="QUY HO TRO PHU NU PT TINH QUANG TRI" placeholder="Tên không dấu">
-            </div>
-            <div>
-                <label>Nội dung chuyển khoản mẫu:</label>
-                <input type="text" id="contentPrefix_t1" value="[Mã TV] [Họ tên] nopgoclaitk" placeholder="VD: [Mã TV] [Họ tên] nopgoclaitk">
-            </div>
-            <div>
-                <label>Họ và tên Nhóm trưởng:</label>
-                <input type="text" id="groupLeaderName_t1" placeholder="Nhập tên nhóm trưởng">
-            </div>
-            <div>
-                <label>Số điện thoại Zalo Nhóm trưởng:</label>
-                <input type="text" id="groupLeaderPhone_t1" placeholder="Ví dụ: 0912345678">
-            </div>
-            <div>
-                <label>Ngày thu tiền:</label>
-                <input type="date" id="inputNgayThu_t1">
-            </div>
-            <div>
-                <label>Logo Quỹ (Chèn vào góc trái):</label>
-                <input type="file" id="logoFile_t1" accept="image/*" style="padding: 4px;">
-            </div>
-        </div>
-
-        <div class="upload-section">
-            <h3>1. Chọn file Excel bảng kê nhiều nhóm/sheet (.xls / .xlsx)</h3>
-            <input type="file" id="excelFile_t1" accept=".xlsx, .xls" style="margin-top: 10px;">
-            <p style="font-size: 12px; color: #666; margin-top: 5px;">Hệ thống sẽ tự động quét tên đơn vị, phòng nghiệp vụ và các sheet (nhóm) từ file Excel.</p>
-        </div>
-
-        <div id="preview-section_t1" style="display:none;">
-            <h3>2. Xem trước tổng hợp toàn bộ thành viên (<span id="rowCount_t1">0</span> thành viên từ tất cả các nhóm)</h3>
-            <div style="max-height: 380px; overflow-y: auto;">
-                <table class="preview-table" id="previewTable_t1">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width: 3%;">STT</th>
-                            <th rowspan="2" style="width: 10%;">Tên Nhóm / Sheet</th>
-                            <th rowspan="2" style="width: 7%;">Mã TV</th>
-                            <th rowspan="2" style="width: 13%;">Họ và Tên</th>
-                            <th colspan="2" style="width: 18%;">Tình hình tiết kiệm - vay vốn</th>
-                            <th colspan="3" style="width: 18%;">Kế hoạch</th>
-                            <th rowspan="2" style="width: 8%;">Tổng nộp (VNĐ)</th>
-                            <th rowspan="2" style="width: 7%;">Mã QR</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 9%;">Dư nợ vốn vay (Gốc + lãi)</th>
-                            <th style="width: 9%;">Số dư gốc TKBB hàng tháng</th>
-                            <th style="width: 6%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 6%;">TKBB hàng tháng</th>
-                            <th style="width: 6%;">Lãi phạt</th>
-                        </tr>
-                    </thead>
-                    <tbody id="previewBody_t1"></tbody>
-                </table>
-            </div>
-
-            <div style="margin-top: 10px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #ddd;">
-                <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #0275d8;">🖨️ Tùy chọn in bảng kê & Xuất Phiếu Thu theo nhóm:</label>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
-                    <select id="selectGroupPrint_t1" style="flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px;">
-                        <option value="ALL">-- Tất cả các nhóm trong file --</option>
-                    </select>
-                    <button class="btn-purple" onclick="generatePrintBangKeSelected()" style="flex: 1; min-width: 180px; padding: 11px; margin: 0;">🖨️ In Bảng Kê Ngang</button>
-                </div>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <select id="selectGroupPDF_t1" style="flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px;">
-                        <option value="ALL">-- Tất cả các nhóm trong file --</option>
-                    </select>
-                    <button class="btn-blue" onclick="generatePrintPDF_t1()" style="flex: 1; min-width: 180px; padding: 11px; margin: 0;">📥 Xuất Phiếu Thu PDF</button>
-                </div>
-            </div>
-            
-            <div class="btn-group">
-                <button class="btn-orange" onclick="renderFolderView()">📁 Xem danh sách thẻ QR toàn thôn</button>
-                <button class="btn-zalo" onclick="sendZaloToGroupLeader()">📲 Gửi Zalo Nhóm Trưởng</button>
-            </div>
-
-            <div class="folder-view" id="folderViewContainer">
-                <h3 id="folderTitle" style="color: #0275d8; margin-top: 0;"></h3>
-                <p style="font-size: 13px; color: #555;">Danh sách mã QR toàn thôn (Chỉ hiển thị thành viên có phát sinh tiền nộp):</p>
-                <div id="qrCardsList"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= CHỨC NĂNG 2 (AN SINH) ================= -->
-<div id="tab2" class="tab-content">
-    <div class="container">
-        <h2>QUẢN LÝ THU TIỀN & BẢNG KÊ AN SINH MÃ QR VIETQR</h2>
-        
-        <div class="config-box">
-            <div>
-                <label>Mã Ngân Hàng:</label>
-                <input type="text" id="bankId_t2" value="Agribank">
-            </div>
-            <div>
-                <label>Số Tài Khoản Nhận Tiền:</label>
-                <select id="bankAcc_t2" onchange="checkCustomAccount(this, 'customBankAcc_t2')"></select>
-                <input type="text" id="customBankAcc_t2" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
-            </div>
-            <div>
-                <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
-                <input type="text" id="bankAccName_t2" value="QUY HO TRO PHU NU PT TINH QUANG TRI">
-            </div>
-            <div>
-                <label>Nội dung chuyển khoản mẫu:</label>
-                <input type="text" id="contentPrefix_t2" value="[Mã TV] [Họ tên] noptkansinh">
-            </div>
-            <div>
-                <label>Họ và tên Nhóm trưởng:</label>
-                <input type="text" id="groupLeaderName_t2">
-            </div>
-            <div>
-                <label>Số điện thoại Zalo Nhóm trưởng:</label>
-                <input type="text" id="groupLeaderPhone_t2">
-            </div>
-            <div>
-                <label>Ngày thu tiền:</label>
-                <input type="date" id="inputNgayThu_t2">
-            </div>
-            <div>
-                <label>Logo Quỹ:</label>
-                <input type="file" id="logoFile_t2" accept="image/*" style="padding: 4px;">
-            </div>
-        </div>
-
-        <div class="upload-section ansinh">
-            <h3>Chọn File Bảng Kê An Sinh Excel (.xls / .xlsx)</h3>
-            <input type="file" id="excelAnSinhFile" accept=".xlsx, .xls" style="margin-top: 10px;">
-        </div>
-
-        <div id="preview-section_t2" style="display:none;">
-            <h3>Xem trước tổng hợp thành viên (<span id="rowCount_t2">0</span> thành viên)</h3>
-            <div style="max-height: 380px; overflow-y: auto;">
-                <table class="preview-table" id="previewTable_t2">
-                    <thead>
-                        <tr>
-                            <th>STT</th>
-                            <th>Tên Nhóm / Sheet</th>
-                            <th>Mã TV</th>
-                            <th>Họ và Tên</th>
-                            <th>Số Sổ</th>
-                            <th>Số Dư / Thông Tin</th>
-                            <th>Số Tiền Thu (VNĐ)</th>
-                            <th>Mã QR VietQR</th>
-                        </tr>
-                    </thead>
-                    <tbody id="previewBody_t2"></tbody>
-                </table>
-            </div>
-
-            <div style="margin-top: 15px; background: #eef5ff; padding: 15px; border-radius: 6px; border: 1px solid #bce8f1;">
-                <label style="font-weight: bold; margin-bottom: 5px; display: block; color: #0275d8;">📥 Tùy chọn xuất Phiếu Thu An Sinh / In ấn:</label>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <select id="selectGroupPDF_t2" style="flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px;">
-                        <option value="ALL">-- Tất cả các nhóm trong file --</option>
-                    </select>
-                    <button class="btn-blue" onclick="generatePrintPDF_t2()" style="flex: 1; min-width: 200px; padding: 11px; margin: 0;">📥 Xuất Phiếu Thu An Sinh PDF</button>
-                </div>
-            </div>
-            
-            <div class="btn-group">
-                <button class="btn-orange" onclick="renderFolderView_t2()">📁 Xem danh sách thẻ QR An Sinh toàn thôn</button>
-                <button class="btn-zalo" onclick="sendZaloToGroupLeader_t2()">📲 Gửi Zalo Nhóm Trưởng (An Sinh)</button>
-            </div>
-
-            <div class="folder-view" id="folderViewContainer_t2">
-                <h3 id="folderTitle_t2" style="color: #0275d8; margin-top: 0;"></h3>
-                <div id="qrCardsList_t2"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= CHỨC NĂNG 3 (KẾ HOẠCH TRẢ NỢ) ================= -->
-<div id="tab3" class="tab-content">
-    <div class="container" style="max-width: 900px; margin: auto;">
-        <h2>CẤU HÌNH NGÂN HÀNG & LẬP KẾ HOẠCH TRẢ NỢ</h2>
-        
-        <div class="config-box" style="margin-bottom: 16px;">
-            <div>
-                <label>Mã Ngân Hàng:</label>
-                <input type="text" id="bankCode" value="Agribank">
-            </div>
-            <div>
-                <label>Số Tài Khoản Nhận Tiền:</label>
-                <select id="accountNo" onchange="checkCustomAccount(this, 'customBankAcc_t3')"></select>
-                <input type="text" id="customBankAcc_t3" placeholder="Nhập số tài khoản mới..." style="display:none; margin-top: 6px;">
-            </div>
-            <div>
-                <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
-                <input type="text" id="accountName" value="QUY HO TRO PHU NU PT TINH QUANG TRI">
-            </div>
-            <div>
-                <label>Nội dung chuyển khoản mẫu:</label>
-                <input type="text" id="transferMemo" value="[Mã TV] [Họ tên] nopgoclaitk">
-            </div>
-        </div>
-
-        <div style="font-weight: bold; color: #3b3086; margin: 15px 0 10px 0;">👤 Thông tin thành viên:</div>
-        <div class="form-grid" style="margin-bottom: 16px;">
-            <div class="form-group">
-                <label>Mã Thành viên:</label>
-                <input type="text" id="memberId" placeholder="Nhập mã TV">
-            </div>
-            <div class="form-group">
-                <label>Tên thành viên:</label>
-                <input type="text" id="memberName" placeholder="Nhập họ và tên">
-            </div>
-        </div>
-
-        <div style="font-weight: bold; color: #3b3086; margin: 15px 0 10px 0;">📄 Thông tin sản phẩm:</div>
-        <div class="form-grid">
-            <div class="form-group">
-                <label>Sản phẩm vay:</label>
-                <select id="loanProduct" onchange="updateLoanTenure()">
-                   
-                    <option value="12">Sản phẩm 12 tháng</option>
-					 <option value="15">Sản phẩm 15 tháng</option>
-                    <option value="18">Sản phẩm 18 tháng</option>
-                    <option value="24" selected>Sản phẩm 24 tháng</option>
-                    <option value="36">Sản phẩm 36 tháng</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Thời hạn vay:</label>
-                <div class="input-group">
-                    <input type="text" id="loanTenure" value="24" readonly>
-                    <select><option>Tháng</option></select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Hạn mức:</label>
-                <input type="text" id="loanLimit" value="20,640,000" oninput="calculateRepayment()">
-            </div>
-            <div class="form-group">
-                <label>Số tiền hoàn trả gốc:</label>
-                
-				<input type="text" id="principalAmount" value="860,000" oninput="calculateManualRepayment()">
-            </div>
-            <div class="form-group">
-                <label>Số tiền hoàn trả lãi:</label>
-                
-				<input type="text" id="interestAmount" value="140,000" oninput="calculateManualRepayment()">
-            </div>
-            <div class="form-group">
-                <label>Tổng số tiền hoàn trả gốc lãi:</label>
-                
-				<input type="text" id="totalPrincipalInterest" value="1,000,000" readonly style="background-color: #f9f9f9;">
-            </div>
-            <div class="form-group">
-                <label>Tiết kiệm BB hàng tháng:</label>
-                <input type="text" id="savingsAmount" value="150,000" oninput="calculateRepayment()">
-            </div>
-            <div class="form-group">
-                <label>Tổng số tiền hoàn trả:</label>
-                <input type="text" id="totalRepayment" value="1,150,000" readonly style="background: #e0f2fe; font-weight: bold; color: #0369a1;">
-            </div>
-        </div>
-
-        <div style="margin-top: 20px;">
-            <button class="btn-blue" onclick="generateVietQR()" style="width: 100%;">📱 Tạo mã VietQR</button>
-        </div>
-
-        <div class="qr-result" id="qrResult" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; text-align: center; display: none; background: #fff;">
-            <h3 style="margin-top:0; color:#1f2937; font-size:16px;">Mã QR Thanh Toán VietQR</h3>
-            <img id="qrImage" src="" alt="Mã VietQR" style="max-width: 220px;"><br>
-            <a id="downloadBtn" href="#" download="VietQR.png" style="margin-top:10px; background:#10b981; color:#fff; padding:8px 16px; border-radius:4px; text-decoration:none; display:inline-block;">Tải ảnh QR</a>
-        </div>
+    <div class="login-subtitle">
+      Vui lòng chọn Phòng nghiệp vụ và nhập mật khẩu.
     </div>
 
-    <!-- Bảng Kế Hoạch Trả Nợ A4 -->
-    <div class="schedule-container" style="max-width: 900px; margin: 20px auto;">
+    <div class="login-form-group">
+      <label>Phòng giao dịch / Nghiệp vụ:</label>
+      <select id="loginPhongSelect">
+        <option value="LE_THUY">Phòng Nghiệp vụ số 01 (Lệ Thủy)</option>
+        <option value="QUANG_NINH">Phòng Nghiệp vụ số 01 (Quảng Ninh)</option>
+        <option value="DONG_HOI">Phòng Nghiệp vụ số 02 (Đồng Hới)</option>
+        <option value="BO_TRACH">Phòng Nghiệp vụ số 02 (Bố Trạch)</option>
+        <option value="QUANG_TRACH">Phòng Nghiệp vụ số 03 (Quảng Trạch)</option>
+        <option value="TUYEN_HOA">Phòng Nghiệp vụ số 03 (Tuyên Hóa)</option>
+      </select>
+    </div>
+
+    <div class="login-form-group">
+      <label>Mật khẩu quản trị:</label>
+      <input type="password" id="loginPassword" placeholder="Nhập mật khẩu...">
+    </div>
+
+    <button class="btn-login-submit" onclick="submitLogin()">Mở Khóa Hệ Thống</button>
+  </div>
+</div>
+
+<!-- THANH TAB CHỌN CHỨC NĂNG -->
+<div class="nav-tabs">
+  <button class="tab-btn active" id="tabLoanBtn" onclick="switchTab('loan')">📄 TẠO MÃ QR VÀ IN BẢNG KẾ HOẠCH GỐC LÃI</button>
+  <button class="tab-btn" id="tabAnSinhBtn" onclick="switchTab('ansinh')">💚 TẠO MÃ QR TKBB AN SINH</button>
+</div>
+
+<!-- FORM CHÍNH (KẾ HOẠCH TRẢ NỢ VAY) -->
+<div class="container" id="loanTabContent">
+  <div class="section-title">
+    🏦 Cấu hình Ngân hàng
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Mã Ngân Hàng (VD: Agribank, VietinBank):</label>
+      <input type="text" id="bankCode" value="Agribank">
+    </div>
+    <div class="form-group">
+      <label>Số Tài Khoản Nhận Tiền:</label>
+      <select id="accountNo"></select>
+    </div>
+    <div class="form-group">
+      <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
+      <input type="text" id="accountName" value="QUY HO TRO PHU NU PT TINH QUANG TRI">
+    </div>
+    <div class="form-group">
+      <label>Nội dung chuyển khoản mẫu:</label>
+      <input type="text" id="transferMemo" value="[Mã TV] [Họ tên] nopgoclaitk">
+    </div>
+  </div>
+
+  <div class="section-title">
+    👤 Thông tin thành viên:
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Mã Thành viên: <span class="required">(*)</span></label>
+      <input type="text" id="memberId" placeholder="Nhập mã TV">
+    </div>
+    <div class="form-group">
+      <label>Tên thành viên: <span class="required">(*)</span></label>
+      <input type="text" id="memberName" placeholder="Nhập họ và tên">
+    </div>
+  </div>
+
+  <div class="section-title">
+    📄 Thông tin sản phẩm vay:
+  </div>
+  
+  <div class="form-group" style="margin-bottom: 16px;">
+    <label>Số lượng món vay của thành viên: <span class="required">(*)</span></label>
+    <select id="numLoanProducts" onchange="toggleLoanProducts()" style="font-weight: 600; color: #4f46e5;">
+      <option value="1" selected>01 Món vay</option>
+      <option value="2">02 Món vay</option>
+      <option value="3">03 Món vay</option>
+    </select>
+  </div>
+
+  <!-- MÓN VAY THỨ 1 -->
+  <div style="background: #fdf8f6; border: 1px solid #fed7aa; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+    <div style="font-weight: 700; color: #c2410c; margin-bottom: 10px;">📦 Món vay thứ nhất:</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Sản phẩm vay:</label>
+        <select id="loanProduct1" onchange="updateLoanTenure(1)">
+          <option value="12" selected>Sản phẩm 12 tháng</option>
+          <option value="15">Sản phẩm 15 tháng</option>
+          <option value="18">Sản phẩm 18 tháng</option>
+          <option value="24">Sản phẩm 24 tháng</option>
+          <option value="36">Sản phẩm 36 tháng</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Thời hạn vay (tháng):</label>
+        <input type="text" id="loanTenure1" value="12" readonly>
+      </div>
+      <div class="form-group">
+        <label>Chọn Hạn mức:</label>
+        <select id="loanLimit1" onchange="onLimitSelectChange(1)" style="font-weight: 600; color: #0284c7;">
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Số tiền hoàn trả gốc món 1:</label>
+        <input type="text" id="principalAmount1" value="" readonly style="background-color: #f8fafc;">
+      </div>
+      <div class="form-group">
+        <label>Số tiền hoàn trả lãi món 1:</label>
+        <input type="text" id="interestAmount1" value="" readonly style="background-color: #f8fafc;">
+      </div>
+      <div class="form-group">
+        <label>Tiết kiệm BB hàng tháng (Món 1):</label>
+        <input type="text" id="savingsAmount1" value="150,000" oninput="calculateRepayment()" placeholder="150,000">
+      </div>
+      <div class="form-group">
+        <label>Tổng hoàn trả gốc lãi món 1 (Gốc + Lãi):</label>
+        <input type="text" id="totalPI1" value="" style="background-color: #f0fdf4; font-weight: bold; color: #15803d;" readonly>
+      </div>
+      <div class="form-group">
+        <label>Tổng hoàn trả món 1 (Gốc + Lãi + TKBB):</label>
+        <input type="text" id="totalPISavings1" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c;" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÓN VAY THỨ 2 -->
+  <div class="sub-loan-box" id="subLoanBox2">
+    <div class="sub-loan-header">📦 Món vay thứ hai:</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Sản phẩm vay:</label>
+        <select id="loanProduct2" onchange="updateLoanTenure(2)">
+          <option value="12" selected>Sản phẩm 12 tháng</option>
+          <option value="15">Sản phẩm 15 tháng</option>
+          <option value="18">Sản phẩm 18 tháng</option>
+          <option value="24">Sản phẩm 24 tháng</option>
+          <option value="36">Sản phẩm 36 tháng</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Thời hạn vay (tháng):</label>
+        <input type="text" id="loanTenure2" value="12" readonly>
+      </div>
+      <div class="form-group">
+        <label>Chọn Hạn mức:</label>
+        <select id="loanLimit2" onchange="onLimitSelectChange(2)" style="font-weight: 600; color: #0284c7;">
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Số tiền hoàn trả gốc món 2:</label>
+        <input type="text" id="principalAmount2" value="" readonly style="background-color: #f8fafc;">
+      </div>
+      <div class="form-group">
+        <label>Số tiền hoàn trả lãi món 2:</label>
+        <input type="text" id="interestAmount2" value="" readonly style="background-color: #f8fafc;">
+      </div>
+      <div class="form-group">
+        <label>Tổng hoàn trả món 2 (Gốc + Lãi):</label>
+        <input type="text" id="totalPI2" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c;" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÓN VAY THỨ 3 -->
+  <div class="sub-loan-box" id="subLoanBox3">
+    <div class="sub-loan-header">📦 Món vay thứ ba:</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Sản phẩm vay:</label>
+        <select id="loanProduct3" onchange="updateLoanTenure(3)">
+          <option value="12" selected>Sản phẩm 12 tháng</option>
+          <option value="15">Sản phẩm 15 tháng</option>
+          <option value="18">Sản phẩm 18 tháng</option>
+          <option value="24">Sản phẩm 24 tháng</option>
+          <option value="36">Sản phẩm 36 tháng</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Thời hạn vay (tháng):</label>
+        <input type="text" id="loanTenure3" value="12" readonly>
+      </div>
+      <div class="form-group">
+        <label>Chọn Hạn mức:</label>
+        <select id="loanLimit3" onchange="onLimitSelectChange(3)" style="font-weight: 600; color: #0284c7;">
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Số tiền hoàn trả gốc món 3:</label>
+        <input type="text" id="principalAmount3" value="" readonly style="background-color: #f8fafc;">
+      </div>
+      <div class="form-group">
+        <label>Số tiền hoàn trả lãi món 3:</label>
+        <input type="text" id="interestAmount3" value="" readonly style="background-color: #f8fafc;">
+      </div>
+      <div class="form-group">
+        <label>Tổng hoàn trả món 3 (Gốc + Lãi):</label>
+        <input type="text" id="totalPI3" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c;" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- TỔNG KẾ HOẠCH TRẢ GỐC LÃI TẤT CẢ CÁC MÓN -->
+  <div style="margin-top: 16px; background: #eff6ff; padding: 16px; border-radius: 8px; border: 1px solid #bfdbfe;">
+    <div class="form-group">
+      <label style="color: #1e3a8a; font-size: 15px;">📊 Tổng số tiền hoàn trả cho tất cả các món (Bao gồm gốc, lãi, TKBB món 1): <span class="required">(*)</span></label>
+      <input type="text" id="totalRepayment" value="" style="background-color: #ffffff; font-weight: bold; color: #1e3a8a; font-size: 16px;" oninput="formatManualTotalRepayment(this)">
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="form-group">
+      <label style="color: #3b3086; font-size: 14px;">📋 Chọn Dạng Bảng kế hoạch: <span class="required">(*)</span></label>
+      <select id="scheduleFormat" style="border-color: #818cf8; font-weight: 600; background-color: #f5f3ff;">
+        <option value="QUY" selected>Dạng Quỹ (Ban Giám Đốc)</option>
+        <option value="TCVM">Dạng TCVM (Ban Quản Lý)</option>
+      </select>
+    </div>
+
+    <button class="btn-submit" onclick="generateVietQR()">
+      📱 Tạo mã VietQR Tổng Hợp & Hiển thị Bảng Kế Hoạch
+    </button>
+  </div>
+
+  <div class="qr-result" id="qrResult">
+    <h3 style="margin-top:0; color:#1f2937; font-size:16px;">Mã QR Thanh Toán Tổng Hợp VietQR</h3>
+    <img id="qrImage" src="" alt="Mã VietQR"><br>
+    <a id="downloadBtn" href="#" download="VietQR.png" class="btn-download">Tải ảnh QR Tổng Hợp</a>
+  </div>
+</div>
+
+<!-- FORM PHỤ (TAB IN QR TK AN SINH) -->
+<!-- FORM PHỤ (TAB IN QR TK AN SINH) -->
+<div class="container" id="anSinhTabContent" style="display: none;">
+  <div class="section-title">
+    🏦 Cấu hình Ngân hàng (TK An Sinh)
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Mã Ngân Hàng (VD: Agribank, VietinBank):</label>
+      <input type="text" id="asBankCode" value="Agribank">
+    </div>
+    <div class="form-group">
+      <label>Số Tài Khoản Nhận Tiền An Sinh:</label>
+      <select id="asAccountNo"></select>
+    </div>
+    <div class="form-group">
+      <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
+      <input type="text" id="asAccountName" value="QUY HO TRO PHU NU PT TINH QUANG TRI">
+    </div>
+    <div class="form-group">
+      <label>Nội dung chuyển khoản mẫu An Sinh:</label>
+      <input type="text" id="asTransferMemo" value="[Mã TV] [Họ tên] noptkansinh">
+    </div>
+  </div>
+
+  <div class="section-title">
+    👤 Thông tin thành viên:
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Mã Thành viên: <span class="required">(*)</span></label>
+      <input type="text" id="asMemberId" placeholder="Nhập mã TV" style="background-color: #eff6ff;">
+    </div>
+    <div class="form-group">
+      <label>Tên thành viên: <span class="required">(*)</span></label>
+      <input type="text" id="asMemberName" placeholder="Nhập họ và tên" style="background-color: #eff6ff;">
+    </div>
+    <div class="form-group">
+      <label>Chọn Số tiền nộp TK An Sinh: <span class="required">(*)</span></label>
+      <select id="asAmount" style="font-weight: 600; color: #059669; background-color: #ecfdf5;">
+        <option value="500000">500,000</option>
+        <option value="1000000">1,000,000</option>
+        <option value="1500000">1,500,000</option>
+        <option value="2000000">2,000,000</option>
+        <option value="2500000">2,500,000</option>
+        <option value="3000000" selected>3,000,000</option>
+        <option value="3500000">3,500,000</option>
+        <option value="4000000">4,000,000</option>
+        <option value="4500000">4,500,000</option>
+        <option value="5000000">5,000,000</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px;">
+    <button class="btn-submit" style="background-color: #059669;" onclick="generateAnSinhVietQR()">
+      📱 Tạo mã VietQR TK An Sinh
+    </button>
+  </div>
+
+  <div class="qr-result" id="asQrResult">
+    <h3 style="margin-top:0; color:#1f2937; font-size:16px;">Mã QR Thanh Toán An Sinh</h3>
+    <img id="asQrImage" alt="Mã VietQR An Sinh"><br>
+    <a id="asDownloadBtn" href="#" download="VietQR_AnSinh.png" class="btn-download" style="background-color: #059669;">Tải ảnh QR An Sinh</a>
+  </div>
+</div>
+
+<!-- VÙNG CHỨA CÁC BẢNG KẾ HOẠCH TRẢ NỢ -->
+<div id="allSchedulesContainer" style="display: none; width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 30px;">
+</div>
+
+<script>
+  const ACCOUNTS_BY_PHONG = {
+    LE_THUY: [
+      { value: "3802201009020", label: "3802201009020 (QUY_LE THUY)" },
+      { value: "3802201009007", label: "3802201009007 (KOICA_LE THUY)" },
+      { value: "3802201008900", label: "3802201008900 (TCVM_LE THUY)" },
+      { value: "3802201009479", label: "3802201009479 (IFAD_LE THUY)" }
+    ],
+    QUANG_NINH: [
+      { value: "3803201006233", label: "3803201006233 (QUY_QUANG NINH)" },
+      { value: "3803201006148", label: "3803201006148 (KOICA_QUANG NINH)" },
+      { value: "3803201006660", label: "3803201006660 (TCVM_QUANG NINH)" },
+      { value: "3803201006828", label: "3803201006828 (IFAD_QUANG NINH)" }
+    ],
+    DONG_HOI: [
+      { value: "3807201003630", label: "3807201003630 (QUY_DONG HOI)" },
+      { value: "3807201003783", label: "3807201003783 (TCVM_DONG HOI)" }
+    ],
+    BO_TRACH: [
+      { value: "3801201009448", label: "3801201009448 (QUY_BO TRACH)" },
+      { value: "3801201009402", label: "3801201009402 (KOICA_BO TRACH)" },
+      { value: "3801201010460", label: "3801201010460 (TCVM_BO TRACH)" },
+      { value: "3801201010981", label: "3801201010981 (IFAD_BO TRACH)" }
+    ],
+    QUANG_TRACH: [
+      { value: "3804201009358", label: "3804201009358 (QUY_QUẢNG TRACH)" },
+      { value: "3804201009341", label: "3804201009341 (KOICA_QUANG TRACH)" },
+      { value: "3804201009227", label: "3804201009227 (TCVM_QUANG TRACH)" },
+      { value: "3804201010080", label: "3804201010080 (IFAD_QUANG TRACH)" }
+    ],
+    TUYEN_HOA: [
+      { value: "3805201006135", label: "3805201006135 (QUY_TUYEN HOA)" },
+      { value: "3805201005835", label: "3805201005835 (KOICA_TUYEN HOA)" },
+      { value: "3805201005943", label: "3805201005943 (TCVM_TUYEN HOA)" },
+      { value: "3805201008370", label: "3805201008370 (IFAD_TUYEN HOA)" }
+    ]
+  };
+
+  const bankBins = {
+    "agribank": "970405",
+    "vietinbank": "970415",
+    "vtb": "970415",
+    "vietcombank": "970436",
+    "vcb": "970436",
+    "bidv": "970418",
+    "mbbank": "970422",
+    "mb": "970422",
+    "techcombank": "970407",
+    "tcb": "970407",
+    "acb": "970416"
+  };
+
+  const LIMITS_DATA = {
+    "12": [
+      {val: 2775000, text: "2,775,000", selected: true},
+      {val: 3330000, text: "3,330,000"},
+      {val: 3885000, text: "3,885,000"},
+      {val: 4440000, text: "4,440,000"},
+      {val: 4995000, text: "4,995,000"},
+      {val: 5550000, text: "5,550,000"},
+      {val: 6105000, text: "6,105,000"},
+      {val: 6660000, text: "6,660,000"},
+      {val: 7215000, text: "7,215,000"},
+      {val: 7770000, text: "7,770,000"},
+      {val: 8325000, text: "8,325,000"},
+      {val: 8880000, text: "8,880,000"},
+      {val: 9435000, text: "9,435,000"},
+      {val: 9990000, text: "9,990,000"},
+      {val: 10545000, text: "10,545,000"},
+      {val: 11100000, text: "11,100,000"},
+      {val: 11655000, text: "11,655,000"},
+      {val: 12210000, text: "12,210,000"},
+      {val: 12765000, text: "12,765,000"},
+      {val: 13320000, text: "13,320,000"},
+      {val: 13875000, text: "13,875,000"},
+      {val: 14430000, text: "14,430,000"},
+      {val: 14985000, text: "14,985,000"},
+      {val: 15540000, text: "15,540,000"},
+      {val: 16095000, text: "16,095,000"},
+      {val: 16650000, text: "16,650,000"},
+      {val: 19425000, text: "19,425,000"},
+      {val: 22200000, text: "22,200,000"},
+      {val: 24975000, text: "24,975,000"},
+      {val: 26640000, text: "26,640,000"}
+    ],
+    "15": [
+      {val: 3405000, text: "3,405,000"},
+      {val: 4086000, text: "4,086,000"},
+      {val: 4767000, text: "4,767,000"},
+      {val: 5448000, text: "5,448,000"},
+      {val: 6129000, text: "6,129,000"},
+      {val: 6810000, text: "6,810,000"},
+      {val: 7491000, text: "7,491,000"},
+      {val: 8172000, text: "8,172,000"},
+      {val: 8853000, text: "8,853,000"},
+      {val: 9534000, text: "9,534,000"},
+      {val: 10215000, text: "10,215,000"},
+      {val: 10896000, text: "10,896,000"},
+      {val: 11577000, text: "11,577,000"},
+      {val: 12258000, text: "12,258,000"},
+      {val: 12939000, text: "12,939,000"},
+      {val: 13620000, text: "13,620,000"},
+      {val: 14301000, text: "14,301,000"},
+      {val: 14982000, text: "14,982,000"},
+      {val: 15663000, text: "15,663,000"},
+      {val: 16344000, text: "16,344,000"},
+      {val: 17025000, text: "17,025,000"},
+      {val: 17706000, text: "17,706,000"},
+      {val: 18387000, text: "18,387,000"},
+      {val: 19068000, text: "19,068,000"},
+      {val: 19749000, text: "19,749,000"},
+      {val: 20430000, text: "20,430,000", selected: true},
+      {val: 23835000, text: "23,835,000"},
+      {val: 27240000, text: "27,240,000"},
+      {val: 30645000, text: "30,645,000"},
+      {val: 32688000, text: "32,688,000"}
+    ],
+    "18": [
+      {val: 4005000, text: "4,005,000"},
+      {val: 4806000, text: "4,806,000"},
+      {val: 5607000, text: "5,607,000"},
+      {val: 6408000, text: "6,408,000"},
+      {val: 7209000, text: "7,209,000"},
+      {val: 8010000, text: "8,010,000"},
+      {val: 8811000, text: "8,811,000"},
+      {val: 9612000, text: "9,612,000"},
+      {val: 10413000, text: "10,413,000"},
+      {val: 11214000, text: "11,214,000"},
+      {val: 12015000, text: "12,015,000"},
+      {val: 12816000, text: "12,816,000"},
+      {val: 13617000, text: "13,617,000"},
+      {val: 14418000, text: "14,418,000"},
+      {val: 15219000, text: "15,219,000"},
+      {val: 16020000, text: "16,020,000", selected: true},
+      {val: 16821000, text: "16,821,000"},
+      {val: 17622000, text: "17,622,000"},
+      {val: 18423000, text: "18,423,000"},
+      {val: 19224000, text: "19,224,000"},
+      {val: 20025000, text: "20,025,000"},
+      {val: 20826000, text: "20,826,000"},
+      {val: 21627000, text: "21,627,000"},
+      {val: 22428000, text: "22,428,000"},
+      {val: 23229000, text: "23,229,000"},
+      {val: 24030000, text: "24,030,000"},
+      {val: 28035000, text: "28,035,000"},
+      {val: 32040000, text: "32,040,000"},
+      {val: 36045000, text: "36,045,000"},
+      {val: 38448000, text: "38,448,000"}
+    ],
+    "24": [
+      {val: 5160000, text: "5,160,000"},
+      {val: 6192000, text: "6,192,000"},
+      {val: 7224000, text: "7,224,000"},
+      {val: 8256000, text: "8,256,000"},
+      {val: 9288000, text: "9,288,000"},
+      {val: 10320000, text: "10,320,000"},
+      {val: 11352000, text: "11,352,000"},
+      {val: 12384000, text: "12,384,000"},
+      {val: 13416000, text: "13,416,000"},
+      {val: 14448000, text: "14,448,000"},
+      {val: 15480000, text: "15,480,000"},
+      {val: 16512000, text: "16,512,000"},
+      {val: 17544000, text: "17,544,000"},
+      {val: 18576000, text: "18,576,000"},
+      {val: 19608000, text: "19,608,000"},
+      {val: 20640000, text: "20,640,000"},
+      {val: 21672000, text: "21,672,000"},
+      {val: 22704000, text: "22,704,000"},
+      {val: 23736000, text: "23,736,000"},
+      {val: 24768000, text: "24,768,000"},
+      {val: 25800000, text: "25,800,000"},
+      {val: 26832000, text: "26,832,000"},
+      {val: 27864000, text: "27,864,000"},
+      {val: 28896000, text: "28,896,000"},
+      {val: 29928000, text: "29,928,000"},
+      {val: 30960000, text: "30,960,000", selected: true},
+      {val: 36120000, text: "36,120,000"},
+      {val: 41280000, text: "41,280,000"},
+      {val: 46440000, text: "46,440,000"},
+      {val: 49536000, text: "49,536,000"}
+    ],
+    "36": [
+      {val: 36000000, text: "36,000,000", selected: true}
+    ]
+  };
+
+  function submitLogin() {
+    const selectedPhongKey = document.getElementById("loginPhongSelect").value;
+    const accountSelect = document.getElementById("accountNo");
+    const asAccountSelect = document.getElementById("asAccountNo");
+    accountSelect.innerHTML = "";
+    asAccountSelect.innerHTML = "";
+    
+    const accountList = ACCOUNTS_BY_PHONG[selectedPhongKey] || [];
+    accountList.forEach(acc => {
+      const opt = document.createElement("option");
+      opt.value = acc.value;
+      opt.textContent = acc.label;
+      accountSelect.appendChild(opt);
+
+      const opt2 = document.createElement("option");
+      opt2.value = acc.value;
+      opt2.textContent = acc.label;
+      asAccountSelect.appendChild(opt2);
+    });
+
+    document.getElementById("loginModal").style.display = "none";
+  }
+
+  function switchTab(tabType) {
+    const loanBtn = document.getElementById("tabLoanBtn");
+    const anSinhBtn = document.getElementById("tabAnSinhBtn");
+    const loanContent = document.getElementById("loanTabContent");
+    const anSinhContent = document.getElementById("anSinhTabContent");
+    const allSchedulesContainer = document.getElementById("allSchedulesContainer");
+
+    if (tabType === 'loan') {
+      loanBtn.classList.add("active");
+      anSinhBtn.classList.remove("active");
+      loanContent.style.display = "block";
+      anSinhContent.style.display = "none";
+    } else {
+      anSinhBtn.classList.add("active");
+      loanBtn.classList.remove("active");
+      loanContent.style.display = "none";
+      anSinhContent.style.display = "block";
+      allSchedulesContainer.style.display = "none";
+
+      document.getElementById("asMemberId").value = document.getElementById("memberId").value;
+      document.getElementById("asMemberName").value = document.getElementById("memberName").value;
+    }
+  }
+
+  function toggleLoanProducts() {
+    const num = document.getElementById("numLoanProducts").value;
+    document.getElementById("subLoanBox2").style.display = (num >= 2) ? "block" : "none";
+    document.getElementById("subLoanBox3").style.display = (num == 3) ? "block" : "none";
+    calculateRepayment();
+  }
+
+  function populateLimits(index, tenureVal) {
+    const limitSelect = document.getElementById(`loanLimit${index}`);
+    limitSelect.innerHTML = "";
+    let options = LIMITS_DATA[tenureVal] || LIMITS_DATA["12"];
+    options.forEach(opt => {
+      let optionElem = document.createElement("option");
+      optionElem.value = opt.val;
+      optionElem.textContent = opt.text;
+      if (opt.selected) optionElem.selected = true;
+      limitSelect.appendChild(optionElem);
+    });
+  }
+
+  function updateLoanTenure(index) {
+    const productSelect = document.getElementById(`loanProduct${index}`);
+    const tenureInput = document.getElementById(`loanTenure${index}`);
+    
+    let tenureVal = productSelect.value;
+    tenureInput.value = tenureVal;
+
+    populateLimits(index, tenureVal);
+    calculateRepayment();
+  }
+
+  function onLimitSelectChange(index) {
+    calculateRepayment();
+  }
+
+  function calculateRepayment() {
+    const num = parseInt(document.getElementById("numLoanProducts").value);
+    let grandTotal = 0;
+
+    for (let i = 1; i <= num; i++) {
+      let limitSelect = document.getElementById(`loanLimit${i}`);
+      let tenureInput = document.getElementById(`loanTenure${i}`);
+      let principalInput = document.getElementById(`principalAmount${i}`);
+      let interestInput = document.getElementById(`interestAmount${i}`);
+      let totalPIInput = document.getElementById(`totalPI${i}`);
+
+      let limitVal = parseFloat(limitSelect.value) || 0;
+      let tenureVal = parseFloat(tenureInput.value) || 12;
+
+      let principalVal = Math.round(limitVal / tenureVal);
+      let interestVal = 0;
+
+      if (tenureVal === 12) {
+        interestVal = Math.round(limitVal * (18750 / 2775000));
+      } else if (tenureVal === 15) {
+        interestVal = Math.round(limitVal * (207000 / 30645000));
+      } else if (tenureVal === 18) {
+        interestVal = Math.round(limitVal * (27500 / 4005000));
+      } else if (tenureVal === 24) {
+        interestVal = Math.round(limitVal * (210000 / 30960000));
+      } else {
+        interestVal = Math.round(limitVal * 0.0068);
+      }
+      
+      let totalPIVal = principalVal + interestVal;
+
+      principalInput.value = principalVal.toLocaleString('en-US');
+      interestInput.value = interestVal.toLocaleString('en-US');
+      totalPIInput.value = totalPIVal.toLocaleString('en-US');
+
+      if (i === 1) {
+        let savingsInput = document.getElementById("savingsAmount1");
+        let totalPISavingsInput = document.getElementById("totalPISavings1");
+        
+        let savingsVal = parseFloat(savingsInput.value.replace(/,/g, '')) || 0;
+        if (savingsInput.value && !isNaN(savingsVal)) {
+          savingsInput.value = savingsVal.toLocaleString('en-US');
+        }
+        let totalPISavingsVal = totalPIVal + savingsVal;
+        totalPISavingsInput.value = totalPISavingsVal.toLocaleString('en-US');
+        grandTotal += totalPISavingsVal;
+      } else {
+        grandTotal += totalPIVal;
+      }
+    }
+
+    document.getElementById("totalRepayment").value = grandTotal.toLocaleString('en-US');
+  }
+
+  function formatManualTotalRepayment(input) {
+    let valRaw = input.value.replace(/,/g, '');
+    let valNum = parseFloat(valRaw);
+    if (!isNaN(valNum)) {
+      input.value = valNum.toLocaleString('en-US');
+    }
+  }
+
+  function generateVietQR() {
+    const memberId = document.getElementById("memberId").value.trim();
+    const memberName = document.getElementById("memberName").value.trim();
+
+    if (!memberId) {
+      alert("Vui lòng nhập Mã Thành viên trước khi tạo mã QR!");
+      document.getElementById("memberId").focus();
+      return;
+    }
+
+    if (!memberName) {
+      alert("Vui lòng nhập Tên thành viên trước khi tạo mã QR!");
+      document.getElementById("memberName").focus();
+      return;
+    }
+
+    let bankInput = document.getElementById("bankCode").value.trim().toLowerCase();
+    let bankBin = bankBins[bankInput] || document.getElementById("bankCode").value.trim();
+
+    const accountNo = document.getElementById("accountNo").value.trim();
+    const accountName = document.getElementById("accountName").value.trim();
+    
+    let totalRaw = document.getElementById("totalRepayment").value.replace(/,/g, '');
+    let amount = parseInt(totalRaw) || 0;
+
+    let memo = `${memberId} ${memberName} nopgoclaitk`.trim();
+
+    const payload = {
+      accountNo: accountNo,
+      accountName: accountName,
+      acqId: bankBin,
+      amount: amount,
+      addInfo: memo,
+      template: "compact2"
+    };
+
+    fetch("https://api.vietqr.io/v2/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.code === "00" && data.data && data.data.qrDataURL) {
+        const qrImg = document.getElementById("qrImage");
+        const downloadBtn = document.getElementById("downloadBtn");
+        const qrResult = document.getElementById("qrResult");
+
+        qrImg.src = data.data.qrDataURL;
+        downloadBtn.href = data.data.qrDataURL;
+        
+        let safeName = memberName.replace(/\s+/g, '');
+        downloadBtn.download = `${memberId}_${safeName}.png`;
+        qrResult.style.display = "block";
+
+        renderAllSchedules(data.data.qrDataURL);
+      } else {
+        alert("Không thể tạo mã QR. Vui lòng kiểm tra lại thông tin ngân hàng hoặc số tài khoản!");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Lỗi kết nối tới dịch vụ VietQR!");
+    });
+  }
+
+  function renderAllSchedules(qrDataURL) {
+    const num = parseInt(document.getElementById("numLoanProducts").value);
+    const formatSelect = document.getElementById("scheduleFormat").value;
+    const container = document.getElementById("allSchedulesContainer");
+    container.innerHTML = "";
+    container.style.display = "flex";
+
+    let sigManager = formatSelect === "TCVM" ? "TM. BAN QUẢN LÝ" : "TM. BAN GIÁM ĐỐC";
+    let sigSubManager = formatSelect === "TCVM" ? "PHÓ BAN QUẢN LÝ" : "PHÓ GIÁM ĐỐC";
+    
+    // Đã thay đổi dòng số hiệu hợp đồng thành bỏ trống với các dấu chấm dài để cán bộ tự điền
+    let hdtdText = "(Ban hành kèm Hợp đồng tín dụng số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/20...... /HĐTD/............................................................................................)";
+
+    for (let i = 1; i <= num; i++) {
+      let limitVal = parseFloat(document.getElementById(`loanLimit${i}`).value) || 0;
+      let tenureVal = parseInt(document.getElementById(`loanTenure${i}`).value) || 12;
+      let principalVal = parseFloat(document.getElementById(`principalAmount${i}`).value.replace(/,/g, '')) || 0;
+      let interestVal = parseFloat(document.getElementById(`interestAmount${i}`).value.replace(/,/g, '')) || 0;
+      let totalPIVal = principalVal + interestVal;
+
+      let initialTotalBalance = totalPIVal * tenureVal;
+
+      let rowsHTML = "";
+      let currentBalance = initialTotalBalance;
+      for (let p = 1; p <= tenureVal; p++) {
+        currentBalance -= totalPIVal;
+        if (p === tenureVal || currentBalance < 0) currentBalance = 0;
+
+        rowsHTML += `
+          <tr>
+            <td>${p}</td>
+            <td class="text-center">${principalVal.toLocaleString('vi-VN')}</td>
+            <td class="text-center">${interestVal.toLocaleString('vi-VN')}</td>
+            <td class="text-center">${totalPIVal.toLocaleString('vi-VN')}</td>
+            <td class="text-center">${currentBalance.toLocaleString('vi-VN')}</td>
+            <td></td>
+          </tr>
+        `;
+      }
+
+      let scheduleDiv = document.createElement("div");
+      scheduleDiv.className = "schedule-container";
+      scheduleDiv.style.display = "block";
+      scheduleDiv.innerHTML = `
         <div class="schedule-header-layout">
-            <div style="width: 110px;"></div>
-            <div class="schedule-header-title">
-                <h2 class="schedule-title">BẢNG TÍNH KẾ HOẠCH TRẢ NỢ THEO GỐC VÀ LÃI VAY</h2>
-                <p class="schedule-subtitle">(Ban hành kèm Hợp đồng tín dụng số &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/2026/HĐTD)</p>
-            </div>
-            <div class="schedule-header-qr" style="width: 110px; text-align: right;">
-                <img id="headerQrImage" src="" alt="Mã VietQR" style="width: 100px; height: 100px; border: 1px solid #ddd; display: none;">
-            </div>
+          <div class="schedule-header-title">
+            <h2 class="schedule-title">BẢNG TÍNH KẾ HOẠCH TRẢ NỢ (MÓN VAY THỨ ${i})</h2>
+            <p class="schedule-subtitle">${hdtdText}</p>
+          </div>
+          <div class="schedule-header-qr">
+            <img src="${qrDataURL}" alt="Mã VietQR">
+          </div>
         </div>
 
         <table class="plan-table">
-            <thead>
-                <tr>
-                    <th rowspan="4" style="width: 8%;">TT</th>
-                    <th colspan="2" class="text-left" id="lblLoanLimit">Số tiền vay: 20.640.000</th>
-                    <th colspan="2" class="text-left" id="lblTenure">Kỳ hạn: 24 tháng</th>
-                    <th rowspan="4" style="width: 15%;">Ghi chú</th>
-                </tr>
-                <tr>
-                    <th colspan="2" class="text-left" id="lblStartBalance">Dư đầu gốc, lãi: 24.000.000</th>
-                    <th colspan="2" class="text-left" id="lblInterestRate">Lãi suất: 0.68%/tháng</th>
-                </tr>
-                <tr>
-                    <th colspan="3">Số tiền hoàn trả hàng tháng</th>
-                    <th rowspan="2" style="width: 25%;">Dư nợ gốc, lãi còn lại</th>
-                </tr>
-                <tr>
-                    <th style="width: 20%;">Gốc</th>
-                    <th style="width: 18%;">Lãi</th>
-                    <th style="width: 22%;">Tổng cộng</th>
-                </tr>
-            </thead>
-            <tbody id="scheduleBody"></tbody>
-			
+          <thead>
+            <tr>
+              <th rowspan="4" style="width: 8%;">TT</th>
+              <th colspan="2" class="text-left">Số tiền vay: ${limitVal.toLocaleString('vi-VN')}</th>
+              <th colspan="2" class="text-left">Kỳ hạn: ${tenureVal} tháng</th>
+              <th rowspan="4" style="width: 15%;">Ghi chú</th>
+            </tr>
+            <tr>
+              <th colspan="2" class="text-left">Dư đầu gốc, lãi: ${initialTotalBalance.toLocaleString('vi-VN')}</th>
+              <th colspan="2" class="text-left">Lãi suất: 0.68%/tháng</th>
+            </tr>
+            <tr>
+              <th colspan="3">Số tiền hoàn trả hàng tháng</th>
+              <th rowspan="2" style="width: 25%;">Dư nợ gốc, lãi còn lại</th>
+            </tr>
+            <tr>
+              <th style="width: 20%;">Gốc</th>
+              <th style="width: 18%;">Lãi</th>
+              <th style="width: 22%;">Tổng cộng</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHTML}
+          </tbody>
         </table>
-<!-- KHỐI CHỮ KÝ PHÍA DƯỚI BẢNG KẾ HOẠCH TRẢ NỢ -->
-<div class="schedule-signatures" style="margin-top: 30px; width: 100%; display: flex; justify-content: space-between; font-size: 10pt; text-align: center;">
-    <div style="width: 45%;">
-        <strong style="text-transform: uppercase;">BÊN CHO VAY (BÊN A)</strong><br>
-        <strong>TM. BAN QUẢN LÝ</strong><br>
-        <strong>PHÓ BAN QUẢN LÝ</strong><br>
-        <span style="font-size: 9pt; font-style: italic;">(Ký, đóng dấu và ghi rõ họ tên)</span>
-        <div style="height: 65px;"></div>
-    </div>
-    <div style="width: 45%;">
-        <strong style="text-transform: uppercase;">BÊN VAY (BÊN B)</strong><br>
-        <span style="font-size: 9pt; font-style: italic;">(Ký và ghi rõ họ tên)</span>
-        <div style="height: 85px;"></div>
-    </div>
-</div>
-        <div style="text-align: center; margin-top: 20px;">
-           
-<button class="no-print" onclick="printScheduleTab()">🖨️ In Bảng Kế Hoạch (A4)</button>       
 
-	   </div>
-		
-    </div>
-</div>
-
-<!-- Modal Popup Xem Ảnh Lớn -->
-<div id="imageModal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle" style="margin-top: 0; color: #0275d8; font-size: 16px;"></h3>
-        <img id="modalImg" src="" alt="QR Phóng to">
-        <div style="margin-top: 15px;">
-            <a id="modalDownloadBtn" href="" download="" style="display:inline-block; padding:8px 20px; background:#0275d8; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold;">💾 Tải ảnh QR này</a>
+        <div class="signature-section">
+          <div class="sig-box">
+            <div class="sig-title">BÊN CHO VAY (BÊN A)</div>
+            <div class="sig-title">${sigManager}</div>
+            <div class="sig-title">${sigSubManager}</div>
+            <div class="sig-subtitle">(Ký, đóng dấu và ghi rõ họ tên)</div>
+            <div class="sig-space"></div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-title">BÊN VAY (BÊN B)</div>
+            <div class="sig-subtitle">(Ký và ghi rõ họ tên)</div>
+            <div class="sig-space"></div>
+          </div>
         </div>
-    </div>
-</div>
+      `;
 
-<div class="print-area" id="printArea"></div>
-
-<script>
-
-// Hàm xử lý riêng khi người dùng tự nhập tay số tiền gốc / lãi / hạn mức
-    function calculateManualRepayment() {
-        const limitInput = document.getElementById("loanLimit");
-        const tenureInput = document.getElementById("loanTenure");
-        const principalInput = document.getElementById("principalAmount");
-        const interestInput = document.getElementById("interestAmount");
-        const totalPIInput = document.getElementById("totalPrincipalInterest");
-        const savingsInput = document.getElementById("savingsAmount");
-        const totalInput = document.getElementById("totalRepayment");
-
-        // Lấy giá trị số (loại bỏ dấu phẩy)
-        let limitVal = parseFloat(limitInput.value.replace(/,/g, '')) || 0;
-        let tenureVal = parseFloat(tenureInput.value) || 0;
-        let principalVal = parseFloat(principalInput.value.replace(/,/g, '')) || 0;
-        let interestVal = parseFloat(interestInput.value.replace(/,/g, '')) || 0;
-
-        // Định dạng lại dấu phẩy khi người dùng đang gõ
-        if (limitInput.value) limitInput.value = limitVal.toLocaleString('en-US');
-        if (principalInput.value) principalInput.value = principalVal.toLocaleString('en-US');
-        if (interestInput.value) interestInput.value = interestVal.toLocaleString('en-US');
-
-        // Tính tổng gốc + lãi mỗi kỳ
-        let totalPIVal = principalVal + interestVal;
-        totalPIInput.value = totalPIVal.toLocaleString('en-US');
-
-        let savingsVal = parseFloat(savingsInput.value.replace(/,/g, '')) || 0;
-        let finalTotal = totalPIVal + savingsVal;
-        totalInput.value = finalTotal.toLocaleString('en-US');
-
-        // Vẽ lại bảng kế hoạch trả nợ dựa trên số tiền tự nhập và kỳ hạn
-        if (tenureVal > 0) {
-            renderScheduleTable(limitVal, tenureVal, principalVal, interestVal, totalPIVal);
-        }
+      container.appendChild(scheduleDiv);
     }
 
+    let printDiv = document.createElement("div");
+    printDiv.style.textAlign = "center";
+    printDiv.style.marginTop = "20px";
+    printDiv.innerHTML = `<button class="btn-print" onclick="window.print()">🖨️ In Tất Cả Bảng Kế Hoạch (A4)</button>`;
+    container.appendChild(printDiv);
+  }
 
+  function generateAnSinhVietQR() {
+    const memberId = document.getElementById("asMemberId").value.trim();
+    const memberName = document.getElementById("asMemberName").value.trim();
+    const amountSelect = document.getElementById("asAmount");
+    const amount = parseInt(amountSelect.value) || 0;
 
-    // --- KHỞI TẠO BIẾN TOÀN CỤC CHUNG ---
-    let globalMembersData = [];
-    let globalGroupedData = [];
-    let globalMembersData_t2 = [];
-    let globalSheetsMeta = new Map();
-    let logoBase64 = "";
-    let logoBase64_t2 = "";
-    let dynamicReportTitle = "PHIẾU THU TIỀN";
-
-    let metaInfo = {
-        tenDonVi: "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ",
-        chiNhanh: "Phòng Nghiệp vụ số 01 (Lệ Thủy)",
-        mauSo: "Mẫu số: 13/TD",
-        xa: "",
-        thon: "",
-        ngayThu: "",
-        chuKyCuoi: "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ"
-    };
-
-    const ACCOUNTS_BY_PHONG = {
-        LE_THUY: [
-            { value: "3802201009020", label: "3802201009020 (QUY_LE THUY)" },
-            { value: "3802201009007", label: "3802201009007 (KOICA_LE THUY)" },
-            { value: "3802201008900", label: "3802201008900 (TCVM_LE THUY)" },
-            { value: "3802201009479", label: "3802201009479 (IFAD_LE THUY)" }
-        ],
-        QUANG_NINH: [
-            { value: "3803201006233", label: "3803201006233 (QUY_QUANG NINH)" },
-            { value: "3803201006148", label: "3803201006148 (KOICA_QUANG NINH)" },
-            { value: "3803201006660", label: "3803201006660 (TCVM_QUANG NINH)" },
-            { value: "3803201006828", label: "3803201006828 (IFAD_QUANG NINH)" }
-        ],
-        DONG_HOI: [
-            { value: "3807201003630", label: "3807201003630 (QUY_DONG HOI)" },
-            { value: "3807201003783", label: "3807201003783 (TCVM_DONG HOI)" }
-        ],
-        BO_TRACH: [
-            { value: "3801201009448", label: "3801201009448 (QUY_BO TRACH)" },
-            { value: "3801201009402", label: "3801201009402 (KOICA_BO TRACH)" },
-            { value: "3801201010460", label: "3801201010460 (TCVM_BO TRACH)" },
-            { value: "3801201010981", label: "3801201010981 (IFAD_BO TRACH)" }
-        ],
-        QUANG_TRACH: [
-            { value: "3804201009358", label: "3804201009358 (QUY_QUẢNG TRACH)" },
-            { value: "3804201009341", label: "3804201009341 (KOICA_QUANG TRACH)" },
-            { value: "3804201009227", label: "3804201009227 (TCVM_QUANG TRACH)" },
-            { value: "3804201010080", label: "3804201010080 (IFAD_QUANG TRACH)" }
-        ],
-        TUYEN_HOA: [
-            { value: "3805201006135", label: "3805201006135 (QUY_TUYEN HOA)" },
-            { value: "3805201005835", label: "3805201005835 (KOICA_TUYEN HOA)" },
-            { value: "3805201005943", label: "3805201005943 (TCVM_TUYEN HOA)" },
-            { value: "3805201008370", label: "3805201008370 (IFAD_TUYEN HOA)" }
-        ]
-    };
-
-    const bankBins = {
-        "agribank": "970405", "vietinbank": "970415", "vtb": "970415",
-        "vietcombank": "970436", "vcb": "970436", "bidv": "970418",
-        "mbbank": "970422", "mb": "970422", "techcombank": "970407",
-        "tcb": "970407", "acb": "970416"
-    };
-
-    function updateAllBankOptions(phongKey) {
-        ['t1', 't2', 'accountNo'].forEach(id => {
-            let select = document.getElementById(id === 'accountNo' ? 'accountNo' : `bankAcc_${id}`);
-            if (!select) return;
-            let list = ACCOUNTS_BY_PHONG[phongKey] || [];
-            let html = '';
-            list.forEach(acc => { html += `<option value="${acc.value}">${acc.label}</option>`; });
-            html += `<option value="CUSTOM">➕ Nhập số tài khoản khác...</option>`;
-            select.innerHTML = html;
-        });
+    if (!memberId) {
+      alert("Vui lòng nhập Mã Thành viên trước khi tạo mã QR An Sinh!");
+      document.getElementById("asMemberId").focus();
+      return;
     }
 
-    function checkUnlockPassword() {
-        let inputPass = document.getElementById('unlockPassword').value;
-        let selectedPhong = document.getElementById('selectPhongNghiepVu').value;
-
-        if (inputPass === "1812" || inputPass === "admin" || inputPass === "quytuink" || inputPass === "hungnb" || inputPass === "admin@123") {
-            updateAllBankOptions(selectedPhong);
-            let selectElem = document.getElementById('selectPhongNghiepVu');
-            metaInfo.chiNhanh = selectElem ? selectElem.options[selectElem.selectedIndex].text : "";
-            
-            document.getElementById('lockScreen').style.display = 'none';
-            document.getElementById('mainTabNav').style.display = 'flex';
-        } else {
-            alert("Sai mật khẩu bảo vệ! Vui lòng thử lại.");
-            document.getElementById('unlockPassword').value = '';
-            document.getElementById('unlockPassword').focus();
-        }
+    if (!memberName) {
+      alert("Vui lòng nhập Tên thành viên trước khi tạo mã QR An Sinh!");
+      document.getElementById("asMemberName").focus();
+      return;
     }
 
-    function switchTab(tabNum) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(`tab${tabNum}`).classList.add('active');
-        document.querySelectorAll('.tab-btn')[tabNum - 1].classList.add('active');
-        
-        // Khi chuyển tab, tự động xóa nội dung printArea cũ để tránh bị lưu rác phiếu thu sang tab khác
-        if (tabNum === 3) {
-            document.getElementById('printArea').innerHTML = '';
-        }
+    if (amount <= 0) {
+      alert("Vui lòng chọn Số tiền nộp TK An Sinh!");
+      amountSelect.focus();
+      return;
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        let dateObj = new Date();
-        let year = dateObj.getFullYear();
-        let month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        let day = String(dateObj.getDate()).padStart(2, '0');
-        let todayStr = `${year}-${month}-${day}`;
+    let bankInput = document.getElementById("asBankCode").value.trim().toLowerCase();
+    let bankBin = bankBins[bankInput] || document.getElementById("asBankCode").value.trim();
 
-        document.getElementById('inputNgayThu_t1').value = todayStr;
-        if(document.getElementById('inputNgayThu_t2')) document.getElementById('inputNgayThu_t2').value = todayStr;
-        
-        let passInput = document.getElementById('unlockPassword');
-        if(passInput) {
-            passInput.focus();
-            passInput.addEventListener("keypress", function(event) {
-                if (event.key === "Enter") checkUnlockPassword();
-            });
-        }
-        updateAllBankOptions('LE_THUY');
-        calculateRepayment();
-    });
-
-    function checkCustomAccount(selectObj, customInputId) {
-        let customInput = document.getElementById(customInputId);
-        if (!customInput) return;
-        if (selectObj.value === 'CUSTOM') {
-            customInput.style.display = 'block'; customInput.focus();
-        } else {
-            customInput.style.display = 'none'; customInput.value = '';
-        }
-    }
-
-    function getSelectedBankAccount(id = 't1') {
-        let elem = document.getElementById(id === 'accountNo' ? 'accountNo' : `bankAcc_${id}`);
-        if (!elem) return "";
-        let selectVal = elem.value;
-        if (selectVal === 'CUSTOM') {
-            let customElem = document.getElementById(id === 'accountNo' ? 'customBankAcc_t3' : `customBankAcc_${id}`);
-            return customElem ? customElem.value.trim() : "";
-        }
-        return selectVal.trim();
-    }
-
-    function removeVietnameseTones(str) {
-        if (!str) return "";
-        str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-        str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-        str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-        str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-        str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-        str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-        str = str.replace(/đ/g, "d");
-        str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
-        str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
-        str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
-        str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
-        str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
-        str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-        str = str.replace(/Đ/g, "D");
-        return str;
-    }
-
-    function docSoTien(soTien) {
-        if (soTien === 0) return "Không đồng";
-        const ChuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
-        const Tien = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
-
-        function docBlock3So(num, isHighest) {
-            let tram = Math.floor(num / 100), chuc = Math.floor((num % 100) / 10), donVi = num % 10, str = "";
-            if (tram > 0 || !isHighest) { str += ChuSo[tram] + " trăm "; if (chuc === 0 && donVi > 0) str += "lẻ "; }
-            if (chuc > 1) { str += ChuSo[chuc] + " mươi "; if (donVi === 1) str += "mốt "; else if (donVi === 5) str += "lăm "; else if (donVi > 0) str += ChuSo[donVi] + " "; }
-            else if (chuc === 1) { str += "mười "; if (donVi === 1) str += "một "; else if (donVi === 5) str += "lăm "; else if (donVi > 0) str += ChuSo[donVi] + " "; }
-            else if (chuc === 0 && donVi > 0 && tram > 0) { if (donVi === 5) str += "lăm "; else str += ChuSo[donVi] + " "; }
-            else if (chuc === 0 && donVi > 0 && tram === 0 && !isHighest) { if (donVi === 5) str += "năm "; else str += ChuSo[donVi] + " "; }
-            else if (chuc === 0 && donVi > 0 && isHighest) { str += ChuSo[donVi] + " "; }
-            return str.trim();
-        }
-
-        let strSo = Math.abs(soTien).toString(), i = 0, kq = [];
-        while (strSo.length > 0) {
-            let len = strSo.length, chunk = parseInt(strSo.substring(Math.max(0, len - 3), len), 10);
-            strSo = strSo.substring(0, Math.max(0, len - 3));
-            if (chunk > 0) {
-                let blockStr = docBlock3So(chunk, strSo.length === 0);
-                if (Tien[i]) blockStr += " " + Tien[i];
-                kq.unshift(blockStr);
-            } else if (kq.length > 0 && strSo.length > 0) { kq.unshift("nghìn"); }
-            i++;
-        }
-        let finalStr = kq.join(" ").replace(/\s+/g, ' ').trim();
-        return finalStr.charAt(0).toUpperCase() + finalStr.slice(1) + " đồng";
-    }
-
-    async function getBase64FromImageUrl(url) {
-        return new Promise((resolve) => {
-            let img = new Image(); img.crossOrigin = "anonymous";
-            img.onload = function () {
-                let canvas = document.createElement("canvas"); canvas.width = img.width; canvas.height = img.height;
-                let ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL("image/png"));
-            };
-            img.onerror = function () { resolve(url); };
-            img.src = url;
-        });
-    }
-
-    function openModal(imgSrc, titleText) {
-        document.getElementById('modalImg').src = imgSrc;
-        document.getElementById('modalTitle').innerText = titleText;
-        document.getElementById('modalDownloadBtn').href = imgSrc;
-        document.getElementById('modalDownloadBtn').download = `QR_${titleText.replace(/[\/\\?%*:|"<>]/g, '_')}.png`;
-        document.getElementById('imageModal').style.display = 'block';
-    }
-    function closeModal() { document.getElementById('imageModal').style.display = 'none'; }
-
-    window.onclick = function(event) {
-        let modal = document.getElementById('imageModal');
-        if (event.target === modal) { modal.style.display = 'none'; }
-    }
-
-    function detectPhongKeyFromName(text) {
-        let upper = text.toUpperCase();
-        if (upper.includes("LỆ THỦY") || upper.includes("LE THUY")) return "LE_THUY";
-        if (upper.includes("QUẢNG NINH") || upper.includes("QUANG NINH")) return "QUANG_NINH";
-        if (upper.includes("ĐỒNG HỚI") || upper.includes("DONG HOI")) return "DONG_HOI";
-        if (upper.includes("BỐ TRẠCH") || upper.includes("BO TRACH")) return "BO_TRACH";
-        if (upper.includes("QUẢNG TRACH") || upper.includes("QUANG TRACH")) return "QUANG_TRACH";
-        if (upper.includes("TUYÊN HÓA") || upper.includes("TUYEN HOA")) return "TUYEN_HOA";
-        return null;
-    }
-
-    // --- XỬ LÝ CHỨC NĂNG 1 ---
+    const accountNo = document.getElementById("asAccountNo").value.trim();
+    const accountName = document.getElementById("asAccountName").value.trim();
     
-	document.getElementById('excelFile_t1')?.addEventListener('change', async function(e) {
-        let file = e.target.files[0]; if (!file) return;
-        let reader = new FileReader();
+    let memo = `${memberId} ${memberName} noptkansinh`.trim();
+
+    const payload = {
+      accountNo: accountNo,
+      accountName: accountName,
+      acqId: bankBin,
+      amount: amount,
+      addInfo: memo,
+      template: "compact2"
+    };
+
+    fetch("https://api.vietqr.io/v2/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.code === "00" && data.data && data.data.qrDataURL) {
+        const qrImg = document.getElementById("asQrImage");
+        const downloadBtn = document.getElementById("asDownloadBtn");
+        const qrResult = document.getElementById("asQrResult");
+
+        qrImg.src = data.data.qrDataURL;
+        downloadBtn.href = data.data.qrDataURL;
         
-        reader.onload = async function(e) {
-            let data = new Uint8Array(e.target.result);
-            let workbook = XLSX.read(data, {type: 'array'});
-            
-            metaInfo.tenDonVi = ""; metaInfo.mauSo = ""; metaInfo.xa = ""; metaInfo.thon = "";
-            metaInfo.canBoTinDung = "";
-            metaInfo.canBoThuTien = "";
-            metaInfo.truongPhong = "";
-            metaInfo.banGiadDoc = "TM. BAN QUẢN LÝ<br>PHÓ BAN QUẢN LÝ";
-            globalSheetsMeta.clear();
-
-            let firstSheetName = workbook.SheetNames.length > 1 && workbook.SheetNames[0].toLowerCase() === 'thamso' ? workbook.SheetNames[1] : workbook.SheetNames[0];
-            let firstWs = workbook.Sheets[firstSheetName];
-            let firstRawData = XLSX.utils.sheet_to_json(firstWs, {header: 1});
-
-            let detectedPhongName = "";
-
-            for (let i = 0; i < Math.min(10, firstRawData.length); i++) {
-                let row = firstRawData[i]; if (!row) continue;
-                row.forEach(cell => {
-                    if (cell && typeof cell === 'string') {
-                        let text = cell.trim(), lower = text.toLowerCase();
-                        if (lower.includes("mẫu số")) {
-                            let parts = text.split(":"); metaInfo.mauSo = parts.length > 1 ? parts[1].trim() : text;
-                        }
-                        if (i < 4 && (lower.includes("quỹ") || lower.includes("chương trình") || lower.includes("tài chính vi mô") || lower.includes("tổ chức")) && !metaInfo.tenDonVi) {
-                            if (!lower.includes("phòng") && !lower.includes("chi nhánh")) {
-                                metaInfo.tenDonVi = text;
-                            }
-                        }
-                        if (lower.includes("phòng nghiệp vụ") || lower.includes("chi nhánh") || lower.includes("phòng giao dịch")) {
-                            detectedPhongName = text;
-                        }
-                    }
-                });
-            }
-
-            if (!metaInfo.tenDonVi) metaInfo.tenDonVi = "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ";
-            if (!metaInfo.mauSo) metaInfo.mauSo = "13/TCVM";
-
-            if (detectedPhongName) {
-                metaInfo.chiNhanh = detectedPhongName;
-                let foundKey = detectPhongKeyFromName(detectedPhongName);
-                if (foundKey) {
-                    updateAllBankOptions(foundKey);
-                    let selectElem = document.getElementById('selectPhongNghiepVu');
-                    if (selectElem) selectElem.value = foundKey;
-                }
-            }
-
-            // --- TỰ ĐỘNG QUÉT VÀ BÓC TÁCH TÊN NHÂN SỰ TỪ CÁC DÒNG CUỐI EXCEL ---
-            let allTextLines = [];
-            for (let i = 0; i < firstRawData.length; i++) {
-                let row = firstRawData[i];
-                if (!row) continue;
-                row.forEach(cell => {
-                    if (cell && typeof cell === 'string') {
-                        let val = cell.trim();
-                        if (val) allTextLines.push({ rowIdx: i, text: val });
-                    }
-                });
-            }
-
-            // Quét tìm kiếm các từ khóa chức danh và lấy tên đi kèm
-            let sigCustomLines = [];
-            for (let i = 0; i < firstRawData.length; i++) {
-                let row = firstRawData[i];
-                if (!row) continue;
-                let rowJoined = row.join(" ").toLowerCase();
-                
-                if (rowJoined.includes("cán bộ tín dụng") || rowJoined.includes("cán bộ thu tiền") || rowJoined.includes("trưởng phòng") || rowJoined.includes("giám đốc") || rowJoined.includes("phó giám đốc") || rowJoined.includes("tm.")) {
-                    // Lấy các ô có dữ liệu trong dòng này hoặc dòng kế tiếp (thường là tên nhân sự nằm ở dòng dưới chức danh)
-                    let subParts = [];
-                    for (let c = 0; c < row.length; c++) {
-                        if (row[c] && String(row[c]).trim() !== "") {
-                            subParts.push(String(row[c]).trim());
-                        }
-                    }
-                    if (subParts.length > 0) {
-                        sigCustomLines.push(subParts.join("<br>"));
-                    }
-                }
-            }
-
-            // Nếu tìm thấy các khối chữ ký cụ thể, gán vào biến toàn cục của báo cáo
-            if (sigCustomLines.length > 0) {
-                // Lọc bỏ bớt các dòng trùng lặp và giữ lại cấu trúc
-                let uniqueSigs = [...new Set(sigCustomLines)];
-                metaInfo.chuKyCuoiCustom = uniqueSigs;
-            }
-
-            let allRowsList = [], membersMap = new Map(), sheetsMap = new Map();
-
-            workbook.SheetNames.forEach(sheetName => {
-                if (sheetName.toLowerCase() === 'thamso') return;
-                let ws = workbook.Sheets[sheetName], sheetData = XLSX.utils.sheet_to_json(ws, {header: 1});
-                let tenNhomSheet = sheetName.trim(), sheetXa = "", sheetThon = "", sheetTenNhom = tenNhomSheet;
-
-                for (let i = 0; i < Math.min(10, sheetData.length); i++) {
-                    let row = sheetData[i]; if (!row) continue;
-                    row.forEach(cell => {
-                        if (cell && typeof cell === 'string') {
-                            let cellStr = cell.trim(), lower = cellStr.toLowerCase();
-                            if (lower.includes("xã/phường:") || lower.includes("xã / phường:")) {
-                                sheetXa = cellStr.replace(/Xã\/Phường[:\s]*/gi, "").trim();
-                            } else if (lower.includes("thôn/bản/tdp:") || lower.includes("thôn / bản")) {
-                                sheetThon = cellStr.replace(/Thôn\/bản\/TDP[:\s]*/gi, "").replace(/Thôn\/bản[:\s]*/gi, "").trim();
-                            } else if (lower.includes("nhóm ") && !lower.includes("bảng kê")) {
-                                sheetTenNhom = cellStr.trim();
-                            }
-                        }
-                    });
-                }
-
-                if (!sheetXa) sheetXa = "Đông Trạch";
-                if (!sheetThon) sheetThon = "Hồng Đức";
-
-                globalSheetsMeta.set(tenNhomSheet, { xa: sheetXa, thon: sheetThon, tenNhom: sheetTenNhom });
-                if (!sheetsMap.has(tenNhomSheet)) sheetsMap.set(tenNhomSheet, []);
-
-                for (let i = 0; i < sheetData.length; i++) {
-                    let row = sheetData[i];
-                    if (row && row[0] && !isNaN(row[0]) && row[2]) {
-                        let stt = row[0], maTV = String(row[1] || '').trim(), hoTen = String(row[2] || '').trim();
-                        let duNoVonVay = parseFloat(row[3]) || 0, soDuTkbb = parseFloat(row[4]) || 0;
-                        let is12T = String(row[5] || '').trim() !== '', is15T = String(row[6] || '').trim() !== '';
-                        let is18T = String(row[7] || '').trim() !== '', is24T = String(row[8] || '').trim() !== '', is30T = String(row[9] || '').trim() !== '';
-                        let vonGocLai = parseFloat(row[10]) || 0, tkbb = parseFloat(row[11]) || 0, laiPhat = parseFloat(row[13]) || 0;
-                        let tongCong = vonGocLai + tkbb + laiPhat;
-
-                        let memObj = { sheetName: tenNhomSheet, sheetXa, sheetThon, sheetTenNhom, stt, maTV, hoTen, duNoVonVay, soDuTkbb, is12T, is15T, is18T, is24T, is30T, vonGocLai, tkbb, laiPhat, tongCong };
-                        allRowsList.push(memObj); sheetsMap.get(tenNhomSheet).push(memObj);
-
-                        let key = maTV !== '' ? `${tenNhomSheet}_${maTV}` : `${tenNhomSheet}_${hoTen}`;
-                        if (!membersMap.has(key)) {
-                            membersMap.set(key, { sheetName: tenNhomSheet, sheetXa, sheetThon, sheetTenNhom, stt, maTV, hoTen, loans: [] });
-                        }
-                        membersMap.get(key).loans.push({ duNoVonVay, soDuTkbb, vonGocLai, tkbb, laiPhat, tongCong });
-                    }
-                }
-            });
-
-            globalMembersData = allRowsList; 
-            globalGroupedData = Array.from(membersMap.values());
-            
-            let selectPrint = document.getElementById('selectGroupPrint_t1');
-            let selectPDF_t1 = document.getElementById('selectGroupPDF_t1');
-            let optHtml = '<option value="ALL">-- Tất cả các nhóm trong file --</option>';
-            sheetsMap.forEach((m, gName) => { if(m.length) optHtml += `<option value="${gName}">Nhóm: ${gName}</option>`; });
-            
-            if (selectPrint) selectPrint.innerHTML = optHtml;
-            if (selectPDF_t1) selectPDF_t1.innerHTML = optHtml;
-
-            let bankId = document.getElementById('bankId_t1').value.trim(), bankAcc = getSelectedBankAccount('t1'), bankAccName = document.getElementById('bankAccName_t1').value.trim();
-            let contentPrefix = document.getElementById('contentPrefix_t1').value.trim();
-
-            if (bankAcc) {
-                for (let mem of globalMembersData) {
-                    if (mem.tongCong > 0) {
-                        let hoTenKD = removeVietnameseTones(mem.hoTen);
-                        let addInfoStr = contentPrefix.replace(/\[Mã TV\]/gi, mem.maTV).replace(/\[Họ tên\]/gi, hoTenKD).replace(/\[Họ và tên\]/gi, hoTenKD);
-                        if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mem.maTV.toLowerCase())) addInfoStr = `${mem.maTV} ${addInfoStr}`;
-                        let rawUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${mem.tongCong}&addInfo=${encodeURIComponent(addInfoStr.trim())}&accountName=${encodeURIComponent(bankAccName)}`;
-                        mem.qrBase64 = await getBase64FromImageUrl(rawUrl);
-                    } else mem.qrBase64 = "";
-                }
-
-                for (let mg of globalGroupedData) {
-                    let totalNop = mg.loans.reduce((s, l) => s + l.tongCong, 0);
-                    if (totalNop > 0) {
-                        let hoTenKD = removeVietnameseTones(mg.hoTen);
-                        let addInfoStr = contentPrefix.replace(/\[Mã TV\]/gi, mg.maTV).replace(/\[Họ tên\]/gi, hoTenKD).replace(/\[Họ và tên\]/gi, hoTenKD);
-                        if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mg.maTV.toLowerCase())) addInfoStr = `${mg.maTV} ${addInfoStr}`;
-                        let rawUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${totalNop}&addInfo=${encodeURIComponent(addInfoStr.trim())}&accountName=${encodeURIComponent(bankAccName)}`;
-                        mg.qrBase64 = await getBase64FromImageUrl(rawUrl);
-                    } else mg.qrBase64 = "";
-                }
-            }
-            displayPreview_t1(globalMembersData);
-        };
-        reader.readAsArrayBuffer(file);
+        let safeName = memberName.replace(/\s+/g, '');
+        downloadBtn.download = `${memberId}_${safeName}.png`;
+        qrResult.style.display = "block";
+      } else {
+        alert("Không thể tạo mã QR An Sinh. Vui lòng kiểm tra lại thông tin!");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Lỗi kết nối tới dịch vụ VietQR!");
     });
-	
-    function displayPreview_t1(data) {
-        let tbody = document.getElementById('previewBody_t1'); if (!tbody) return;
-        tbody.innerHTML = '';
-        document.getElementById('rowCount_t1').innerText = data.length;
-        
-        let sDu = 0, sTk = 0, sVo = 0, sTb = 0, sLa = 0, sNop = 0;
-        data.forEach(mem => {
-            sDu += mem.duNoVonVay; sTk += mem.soDuTkbb; sVo += mem.vonGocLai; sTb += mem.tkbb; sLa += mem.laiPhat; sNop += mem.tongCong;
-            let qrHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" class="thumb-qr" onclick="openModal('${mem.qrBase64}', '${mem.hoTen}')">` : 'Không có';
-
-            tbody.innerHTML += `<tr>
-                <td class="text-center">${mem.stt}</td>
-                <td style="font-weight:bold; color:#0275d8;">${mem.sheetName}</td>
-                <td class="text-center">${mem.maTV}</td>
-                <td>${mem.hoTen}</td>
-                <td class="text-right">${mem.duNoVonVay ? mem.duNoVonVay.toLocaleString('vi-VN') : ''}</td>
-                <td class="text-right">${mem.soDuTkbb ? mem.soDuTkbb.toLocaleString('vi-VN') : ''}</td>
-                <td class="text-right">${mem.vonGocLai ? mem.vonGocLai.toLocaleString('vi-VN') : ''}</td>
-                <td class="text-right">${mem.tkbb ? mem.tkbb.toLocaleString('vi-VN') : ''}</td>
-                <td class="text-right">${mem.laiPhat ? mem.laiPhat.toLocaleString('vi-VN') : ''}</td>
-                <td class="text-right"><strong>${mem.tongCong ? mem.tongCong.toLocaleString('vi-VN') : ''}</strong></td>
-                <td class="text-center">${qrHtml}</td>
-            </tr>`;
-        });
-        document.getElementById('preview-section_t1').style.display = 'block';
-    }
-
-    function formatChiNhanhHtml(txt) {
-        if (!txt) return "";
-        return txt.includes("<br>") ? txt : txt.replace("\n", "<br>");
-    }
-
-   
+  }
+  window.onload = function() {
+    document.getElementById("loginModal").style.display = "flex";
+    populateLimits(1, 12);
+    populateLimits(2, 12);
+    populateLimits(3, 12);
+    calculateRepayment();
+  };
   
-function generatePrintBangKeSelected() {
-        document.body.classList.add('printing-tab1-2');
-        let selectedGroup = document.getElementById('selectGroupPrint_t1').value, rawDate = document.getElementById('inputNgayThu_t1').value;
-        let bankAcc = getSelectedBankAccount('t1');
-        if (!bankAcc) { alert("Vui lòng chọn số tài khoản ngân hàng!"); document.body.classList.remove('printing-tab1-2'); return; }
-
-        let ngayStr = "Ngày ...... tháng ...... năm ......";
-        if (rawDate) { let p = rawDate.split('-'); ngayStr = `Ngày ${parseInt(p[2])} tháng ${parseInt(p[1])} năm ${p[0]}`; }
-        
-        let originalTitle = document.title;
-        let groupNameForFile = selectedGroup === "ALL" ? "Toan_Bo_Cac_Nhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
-        document.title = `BangKe_${groupNameForFile}_${rawDate || '2026'}`;
-
-        let styleSheet = document.createElement("style");
-        styleSheet.type = "text/css"; styleSheet.id = "dynamicPrintStyle";
-        styleSheet.innerText = "@page { size: A4 landscape; margin: 2mm; }";
-        document.head.appendChild(styleSheet);
-
-        let printArea = document.getElementById('printArea'); printArea.innerHTML = '';
-        
-        let mauSoChuan = metaInfo.mauSo.toLowerCase().includes("mẫu số") ? metaInfo.mauSo : `Mẫu số: ${metaInfo.mauSo}`;
-        let chiNhanhDisplay = formatChiNhanhHtml(metaInfo.chiNhanh);
-        let logoHtml = logoBase64 ? `<img src="${logoBase64}" alt="Logo">` : '';
-
-        let sheetsMap = new Map(); 
-        globalMembersData.forEach(m => { 
-            if(!sheetsMap.has(m.sheetName)) sheetsMap.set(m.sheetName, []); 
-            sheetsMap.get(m.sheetName).push(m); 
-        });
-
-        let countPrinted = 0;
-        sheetsMap.forEach((members, gName) => {
-            if (selectedGroup !== "ALL" && gName !== selectedGroup) return;
-            countPrinted++;
-
-            let meta = globalSheetsMeta.get(gName);
-            let gXa = meta ? meta.xa : members[0].sheetXa;
-            let gThon = meta ? meta.thon : members[0].sheetThon;
-            let gTenNhom = meta ? meta.tenNhom : gName;
-
-            let rowsHtml = '', sDu = 0, sTk = 0, sVo = 0, sTb = 0, sLa = 0, sNop = 0;
-            
-            members.forEach(m => {
-                sDu += m.duNoVonVay; sTk += m.soDuTkbb; sVo += m.vonGocLai; sTb += m.tkbb; sLa += m.laiPhat; sNop += m.tongCong;
-                let qrColHtml = m.tongCong > 0 ? `<img src="${m.qrBase64}" style="width: 75px; height: 85px; object-fit: contain; display: block; margin: auto;">` : '';
-                
-                rowsHtml += `<tr>
-                    <td>${m.stt}</td><td>${m.maTV}</td><td style="text-align:left; padding-left:4px;">${m.hoTen}</td>
-                    <td style="text-align:right;">${m.duNoVonVay ? m.duNoVonVay.toLocaleString('vi-VN') : ''}</td>
-                    <td style="text-align:right;">${m.soDuTkbb ? m.soDuTkbb.toLocaleString('vi-VN') : '-'}</td>
-                    <td>${m.is12T?'x':''}</td><td>${m.is15T?'x':''}</td><td>${m.is18T?'x':''}</td><td>${m.is24T?'x':''}</td>
-                    <td style="text-align:right;">${m.vonGocLai ? m.vonGocLai.toLocaleString('vi-VN') : ''}</td>
-                    <td style="text-align:right;">${m.tkbb ? m.tkbb.toLocaleString('vi-VN') : '-'}</td>
-                    <td style="text-align:right;">${m.laiPhat ? m.laiPhat.toLocaleString('vi-VN') : '-'}</td>
-                    <td style="text-align:right; font-weight:bold;">${m.tongCong ? m.tongCong.toLocaleString('vi-VN') : ''}</td>
-                    <td></td><td></td><td></td><td></td><td></td>
-                    <td>${qrColHtml}</td>
-                </tr>`;
-            });
-
-            let inputLeader = document.getElementById('groupLeaderName_t1').value.trim();
-            let nhomTruongKy = inputLeader ? inputLeader : gTenNhom;
-
-            printArea.innerHTML += `<div class="bangke-print-container">
-                <table style="width:100%; border:none;"><tr>
-                    <td style="border:none;">
-                        <div class="header-logo-box">
-                            ${logoHtml}
-                            <div>
-                                <strong style="font-size: 10pt;">${metaInfo.tenDonVi}</strong><br>
-                                <span style="font-size: 9pt;">${chiNhanhDisplay}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="text-align:right; vertical-align:top; border:none;"><strong style="font-size: 9.5pt;">${mauSoChuan}</strong></td>
-                </tr></table>
-
-                <div style="text-align:center; font-size:13pt; font-weight:bold; margin-top:2px; text-transform:uppercase;">BẢNG KÊ THU TIỀN CỦA THÀNH VIÊN</div>
-                <div style="text-align:center; font-style:italic; font-size:9pt; margin-bottom:4px;">${ngayStr}</div>
-                
-                <table style="width:100%; font-size:9pt; margin-bottom: 4px; border:none;"><tr>
-                    <td style="border:none;"><strong>Xã/Phường:</strong> ${gXa}</td>
-                    <td style="text-align:center; border:none;"><strong>Thôn/bản/TDP:</strong> ${gThon}</td>
-                    <td style="text-align:right; border:none;"><strong>Nhóm:</strong> ${gTenNhom} &nbsp;&nbsp;&nbsp;&nbsp; <span style="font-size:8pt; font-style:italic;">ĐVT: VND</span></td>
-                </tr></table>
-
-                <table class="print-tbl">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width: 3%;">STT</th>
-                            <th rowspan="2" style="width: 6%;">Mã TV</th>
-                            <th rowspan="2" style="width: 14%;">Họ và tên</th>
-                            <th colspan="2" style="width: 16%;">Tình hình tiết kiệm - vay vốn</th>
-                            <th colspan="4" style="width: 10%;">Món vay</th>
-                            <th colspan="4" style="width: 16%;">Kế hoạch</th>
-                            <th colspan="4" style="width: 16%;">Thực thu (Để trống viết tay)</th>
-                            <th rowspan="2" style="width: 7%;">Chữ ký</th>
-                            <th rowspan="2" style="width: 8%;">Mã QR</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 8%;">Dư nợ vốn vay (Gốc + lãi)</th>
-                            <th style="width: 8%;">Số dư gốc TKBB</th>
-                            <th>12T</th><th>15T</th><th>18T</th><th>24T</th>
-                            <th style="width: 4%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 4%;">TKBB</th>
-                            <th style="width: 4%;">Lãi Phạt</th>
-                            <th style="width: 4%;">Tổng</th>
-                            <th style="width: 4%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 4%;">TKBB</th>
-                            <th style="width: 4%;">Lãi phạt</th>
-                            <th style="width: 4%;">Tổng</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml}
-                        <tr style="font-weight:bold;">
-                            <td colspan="3" class="text-center">Tổng cộng</td>
-                            <td style="text-align:right;">${sDu.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sTk.toLocaleString('vi-VN')}</td>
-                            <td></td><td></td><td></td><td></td>
-                            <td style="text-align:right;">${sVo.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sTb.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sLa.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sNop.toLocaleString('vi-VN')}</td>
-                            <td></td><td></td><td></td><td></td><td></td><td></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 6px; font-size: 9pt;">
-                    <strong>Tổng số tiền dự thu bằng chữ:</strong> <i>${docSoTien(sNop)}</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <strong>Tổng số tiền thực thu bằng chữ:</strong> ........................................................................................
-                </div>
-
-                <!-- Khối 5 cột chữ ký tiêu chuẩn, phân bố đều, không bị dồn đống -->
-                <table style="width:100%; margin-top:15px; font-size:9pt; text-align:center; border-collapse:collapse; border:none;">
-                    <tr>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Nhóm trưởng/Người nộp tiền</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                            <strong>${nhomTruongKy}</strong>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Cán bộ tín dụng</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Cán bộ thu tiền</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Trưởng/Phó phòng Nghiệp vụ</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>TM. Ban Giám đốc</strong><br><strong>Phó Giám đốc</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên, đóng dấu)</span>
-                        </td>
-                    </tr>
-                </table>
-            </div>`;
-        });
-
-        if (countPrinted === 0) { 
-            alert("Không tìm thấy dữ liệu để in!"); 
-            document.getElementById("dynamicPrintStyle")?.remove(); 
-            document.body.classList.remove('printing-tab1-2'); 
-            document.title = originalTitle;
-            return; 
-        }
-
-        window.print();
-        
-        document.getElementById("dynamicPrintStyle")?.remove();
-        document.body.classList.remove('printing-tab1-2');
-        document.title = originalTitle;
-    }
-  
-	
-	// --- ĐỒNG BỘ CHỌN LOGO CHO CẢ TAB 1 VÀ TAB 2 ---
-    document.getElementById('logoFile_t1')?.addEventListener('change', function(e) {
-        let file = e.target.files[0];
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = evt => {
-                logoBase64 = evt.target.result;
-                logoBase64_t2 = logoBase64; // Dùng chung logo cho An sinh
-            };
-            reader.readAsDataURL(file);
-        } else { logoBase64 = ""; logoBase64_t2 = ""; }
-    });
-
-    document.getElementById('logoFile_t2')?.addEventListener('change', function(e) {
-        let file = e.target.files[0];
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = evt => { logoBase64_t2 = evt.target.result; };
-            reader.readAsDataURL(file);
-        } else { logoBase64_t2 = ""; }
-    });
-
-    // --- XUẤT PHIẾU THU PDF (TAB 1) - DỌC - CÓ LOGO GÓC TRÁI ---
-    function generatePrintPDF_t1() {
-        document.body.classList.add('printing-tab1-2');
-        let selectedGroup = document.getElementById('selectGroupPDF_t1').value;
-        let bankAcc = getSelectedBankAccount('t1');
-        let groupLeaderName = document.getElementById('groupLeaderName_t1').value.trim();
-
-        if (!bankAcc) { alert("Vui lòng chọn số tài khoản ngân hàng!"); document.body.classList.remove('printing-tab1-2'); return; }
-
-        let rawDateVal = document.getElementById('inputNgayThu_t1').value;
-        let ngayStr = "Ngày ...... tháng ...... năm ......";
-        if (rawDateVal) {
-            let p = rawDateVal.split('-');
-            if (p.length === 3) ngayStr = `Ngày ${parseInt(p[2])} tháng ${parseInt(p[1])} năm ${p[0]}`;
-        }
-
-        let originalTitle = document.title;
-        let groupNameForFile = selectedGroup === "ALL" ? "Toan_Bo_Cac_Nhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
-        document.title = `PhieuThu_${groupNameForFile}_${rawDateVal || '2026'}`;
-
-        let styleSheet = document.createElement("style");
-        styleSheet.type = "text/css"; styleSheet.id = "dynamicPrintStyle_t1";
-        styleSheet.innerText = `
-            @page { size: A4 portrait; margin: 5mm 10mm; }
-            body { margin: 0; padding: 0; }
-            
-            /* Ép toàn bộ container phiếu thu trên trang 1 dính sát lên trên */
-            .phieuthu-container, .phieuthu-print-container {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-                box-sizing: border-box;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                page-break-after: always;
-            }
-            
-            /* Riêng khối đầu tiên triệt tiêu mọi khoảng cách phía trên */
-            .phieuthu-container:first-of-type, 
-            .phieuthu-print-container:first-of-type {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-                page-break-before: avoid !important;
-            }
-        `;
-        document.head.appendChild(styleSheet);
-
-        let printArea = document.getElementById('printArea'); printArea.innerHTML = '';
-        let countPrinted = 0;
-
-        globalGroupedData.forEach(mem => {
-            if (selectedGroup !== "ALL" && mem.sheetName !== selectedGroup) return;
-
-            let validLoans = mem.loans.filter(loan => loan.tongCong > 0 || loan.vonGocLai > 0 || loan.tkbb > 0 || loan.laiPhat > 0);
-            let totalDuNo = 0, totalTkbbSoDu = 0, totalVon = 0, totalTkbbNop = 0, totalNop = 0;
-
-            validLoans.forEach(loan => {
-                totalDuNo += loan.duNoVonVay;
-                totalTkbbSoDu += loan.soDuTkbb;
-                totalVon += loan.vonGocLai;
-                totalTkbbNop += loan.tkbb;
-                totalNop += loan.tongCong;
-            });
-            
-            if (validLoans.length === 0 || totalNop <= 0) return;
-            countPrinted++;
-
-            let rowsHtml = '';
-            validLoans.forEach(loan => {
-                rowsHtml += `<tr>
-                    <td class="text-center">${loan.duNoVonVay ? loan.duNoVonVay.toLocaleString('vi-VN') : '0'}</td>
-                    <td class="text-center">${loan.soDuTkbb ? loan.soDuTkbb.toLocaleString('vi-VN') : '0'}</td>
-                    <td class="text-center">${loan.vonGocLai ? loan.vonGocLai.toLocaleString('vi-VN') : '0'}</td>
-                    <td class="text-center">${loan.tkbb ? loan.tkbb.toLocaleString('vi-VN') : '0'}</td>
-                    <td class="text-center">${loan.tongCong ? loan.tongCong.toLocaleString('vi-VN') : '0'}</td>
-                </tr>`;
-            });
-
-            if (validLoans.length > 1) {
-                rowsHtml += `<tr style="font-weight: bold; background-color: #fafafa;">
-                    <td class="text-center">${totalDuNo.toLocaleString('vi-VN')}</td>
-                    <td class="text-center">${totalTkbbSoDu.toLocaleString('vi-VN')}</td>
-                    <td class="text-center">${totalVon.toLocaleString('vi-VN')}</td>
-                    <td class="text-center">${totalTkbbNop.toLocaleString('vi-VN')}</td>
-                    <td class="text-center" style="color: #d9534f;">${totalNop.toLocaleString('vi-VN')}</td>
-                </tr>`;
-            }
-
-            let logoTagHtml = logoBase64 ? `<img src="${logoBase64}" style="height: 42px; width: auto; object-fit: contain; margin-right: 8px;">` : '';
-
-            printArea.innerHTML += `<div class="ansinh-print-container">
-                <table style="width:100%; border:none;"><tr>
-                    <td style="border:none;">
-                        <div style="display: flex; align-items: center;">
-                            ${logoTagHtml}
-                            <div>
-                                <strong style="font-size: 10pt; text-transform: uppercase;">${metaInfo.tenDonVi}</strong><br>
-                                <span style="font-size: 9pt;">${formatChiNhanhHtml(metaInfo.chiNhanh)}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="text-align:right; vertical-align:top; border:none;"><strong style="font-size: 9.5pt;">${metaInfo.mauSo}</strong></td>
-                </tr></table>
-
-                <div style="text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 10px 0 3px 0;">PHIẾU THU TIỀN VỐN GỐC LÃI VÀ TIẾT KIỆM</div>
-                <div style="text-align: center; font-style: italic; font-size: 9.5pt; margin-bottom: 6px;">${ngayStr}</div>
-                
-                <div style="text-align: center; font-size: 9.5pt; margin-bottom: 6px;">
-                    <strong>Xã/Phường:</strong> ${mem.sheetXa} &nbsp;&nbsp;&nbsp;&nbsp; 
-                    <strong>Thôn/Bản:</strong> ${mem.sheetThon} &nbsp;&nbsp;&nbsp;&nbsp; 
-                    <strong>Nhóm:</strong> ${mem.sheetTenNhom}
-                </div>
-
-                <div style="margin-bottom: 3px; font-size: 10pt;"><strong>Mã TV:</strong> ${mem.maTV}</div>
-
-                <table style="width:100%; margin-bottom: 6px; border:none;"><tr>
-                    <td style="border:none; text-align: left; font-size: 10pt;"><strong>Họ và tên thành viên:</strong> ${mem.hoTen}</td>
-                    <td style="border:none; text-align: right; font-size: 10pt;">${groupLeaderName ? `<strong>Nhóm trưởng:</strong> ${groupLeaderName}` : ''}</td>
-                </tr></table>
-
-                <table class="print-tbl" style="width:100%; border-collapse:collapse; margin: 6px 0;">
-                    <thead>
-                        <tr>
-                            <th colspan="2" style="width: 45%;">Tình hình tiết kiệm - vay vốn</th>
-                            <th colspan="3" style="width: 55%;">Kế hoạch</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 23%;">Dư nợ vốn vay (Gốc + lãi)</th>
-                            <th style="width: 22%;">Số dư gốc TKBB hàng tháng</th>
-                            <th style="width: 20%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 18%;">TKBB hàng tháng</th>
-                            <th style="width: 17%;">Tổng</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-
-                <div style="margin-top: 6px; font-size: 10pt;"><strong>Số tiền bằng chữ:</strong> <i>${docSoTien(totalNop)}</i></div>
-
-                <div style="text-align:center; margin-top:10px;">
-                    <div style="font-size: 9.5pt; font-weight: bold; margin-bottom: 2px;">MÃ QR CHUYỂN KHOẢN VIETQR</div>
-                    <img src="${mem.qrBase64}" style="width: 170px; height: 195px; border: 1px solid #ccc; padding: 3px; background: #fff; object-fit: contain;">
-                </div>
-            </div>`;
-        });
-
-        if (countPrinted === 0) { 
-            alert("Không có thành viên nào có kế hoạch trả nộp để xuất phiếu thu!"); 
-            document.getElementById("dynamicPrintStyle_pdf")?.remove(); 
-            document.body.classList.remove('printing-tab1-2'); 
-            document.title = originalTitle;
-            return; 
-        }
-
-        window.print();
-        
-        document.getElementById("dynamicPrintStyle_pdf")?.remove();
-        document.body.classList.remove('printing-tab1-2');
-        document.title = originalTitle;
-    }
-
-    // --- IN BẢNG KÊ NGANG (TAB 1) - CÓ LOGO GÓC TRÁI ---
-    function generatePrintBangKeSelected() {
-        document.body.classList.add('printing-tab1-2');
-        let selectedGroup = document.getElementById('selectGroupPrint_t1').value, rawDate = document.getElementById('inputNgayThu_t1').value;
-        let bankAcc = getSelectedBankAccount('t1');
-        if (!bankAcc) { alert("Vui lòng chọn số tài khoản ngân hàng!"); document.body.classList.remove('printing-tab1-2'); return; }
-
-        let ngayStr = "Ngày ...... tháng ...... năm ......";
-        if (rawDate) { let p = rawDate.split('-'); ngayStr = `Ngày ${parseInt(p[2])} tháng ${parseInt(p[1])} năm ${p[0]}`; }
-        
-        let originalTitle = document.title;
-        let groupNameForFile = selectedGroup === "ALL" ? "Toan_Bo_Cac_Nhom" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
-        document.title = `BangKe_${groupNameForFile}_${rawDate || '2026'}`;
-
-        let styleSheet = document.createElement("style");
-        styleSheet.type = "text/css"; styleSheet.id = "dynamicPrintStyle";
-        styleSheet.innerText = `
-            @page { size: A4 landscape; margin: 2mm 5mm 5mm 5mm; }
-            body, html { margin: 0; padding: 0; }
-            #printArea { margin: 0; padding: 0; }
-            
-            /* Đảm bảo khối đầu tiên KHÔNG bị ngắt trang đẩy xuống */
-            .bangke-print-container {
-                box-sizing: border-box;
-                width: 100%;
-                margin: 0 !important;
-                padding: 0 !important;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                page-break-before: avoid !important;
-                break-before: avoid !important;
-                page-break-after: always;
-                break-after: page;
-            }
-            
-            /* Triệt tiêu hoàn toàn khoảng trắng thừa ở thẻ đầu tiên */
-            .bangke-print-container:first-of-type {
-                page-break-before: avoid !important;
-                break-before: avoid !important;
-                margin-top: 0 !important;
-            }
-        `;
-        document.head.appendChild(styleSheet);
-		
-		
-        let printArea = document.getElementById('printArea'); printArea.innerHTML = '';
-        
-        let mauSoChuan = metaInfo.mauSo.toLowerCase().includes("mẫu số") ? metaInfo.mauSo : `Mẫu số: ${metaInfo.mauSo}`;
-        let chiNhanhDisplay = formatChiNhanhHtml(metaInfo.chiNhanh);
-        let logoTagHtml = logoBase64 ? `<img src="${logoBase64}" style="height: 45px; width: auto; object-fit: contain; margin-right: 8px;">` : '';
-
-        let sheetsMap = new Map(); 
-        globalMembersData.forEach(m => { 
-            if(!sheetsMap.has(m.sheetName)) sheetsMap.set(m.sheetName, []); 
-            sheetsMap.get(m.sheetName).push(m); 
-        });
-
-        let countPrinted = 0;
-        sheetsMap.forEach((members, gName) => {
-            if (selectedGroup !== "ALL" && gName !== selectedGroup) return;
-            countPrinted++;
-
-            let meta = globalSheetsMeta.get(gName);
-            let gXa = meta ? meta.xa : members[0].sheetXa;
-            let gThon = meta ? meta.thon : members[0].sheetThon;
-            let gTenNhom = meta ? meta.tenNhom : gName;
-
-            let rowsHtml = '', sDu = 0, sTk = 0, sVo = 0, sTb = 0, sLa = 0, sNop = 0;
-            
-            members.forEach(m => {
-                sDu += m.duNoVonVay; sTk += m.soDuTkbb; sVo += m.vonGocLai; sTb += m.tkbb; sLa += m.laiPhat; sNop += m.tongCong;
-                let qrColHtml = m.tongCong > 0 ? `<img src="${m.qrBase64}" style="width: 75px; height: 85px; object-fit: contain; display: block; margin: auto;">` : '';
-                
-                rowsHtml += `<tr>
-                    <td>${m.stt}</td><td>${m.maTV}</td><td style="text-align:left; padding-left:4px;">${m.hoTen}</td>
-                    <td style="text-align:right;">${m.duNoVonVay ? m.duNoVonVay.toLocaleString('vi-VN') : ''}</td>
-                    <td style="text-align:right;">${m.soDuTkbb ? m.soDuTkbb.toLocaleString('vi-VN') : '-'}</td>
-                    <td>${m.is12T?'x':''}</td><td>${m.is15T?'x':''}</td><td>${m.is18T?'x':''}</td><td>${m.is24T?'x':''}</td>
-                    <td style="text-align:right;">${m.vonGocLai ? m.vonGocLai.toLocaleString('vi-VN') : ''}</td>
-                    <td style="text-align:right;">${m.tkbb ? m.tkbb.toLocaleString('vi-VN') : '-'}</td>
-                    <td style="text-align:right;">${m.laiPhat ? m.laiPhat.toLocaleString('vi-VN') : '-'}</td>
-                    <td style="text-align:right; font-weight:bold;">${m.tongCong ? m.tongCong.toLocaleString('vi-VN') : ''}</td>
-                    <td></td><td></td><td></td><td></td><td></td>
-                    <td>${qrColHtml}</td>
-                </tr>`;
-            });
-
-            let inputLeader = document.getElementById('groupLeaderName_t1').value.trim();
-            let nhomTruongKy = inputLeader ? inputLeader : gTenNhom;
-
-           
-// Đưa margin-top của tiêu đề về 0px và thu hẹp các khoảng cách thừa bên dưới
-printArea.innerHTML += `<div class="bangke-print-container" style="padding-top: 0; margin-top: 0;">
-    <table style="width:100%; border:none; margin-bottom: 2px;"><tr>
-        <td style="border:none; padding:0;">
-            <div style="display: flex; align-items: center;">
-                ${logoTagHtml}
-                <div>
-                    <strong style="font-size: 9.5pt; text-transform: uppercase;">${metaInfo.tenDonVi}</strong><br>
-                    <span style="font-size: 8.5pt;">${chiNhanhDisplay}</span>
-                </div>
-            </div>
-        </td>
-        <td style="text-align:right; vertical-align:top; border:none; padding:0;"><strong style="font-size: 9pt;">${mauSoChuan}</strong></td>
-    </tr></table>
-
-    <div style="text-align:center; font-size:12pt; font-weight:bold; margin-top:0px; margin-bottom:1px; text-transform:uppercase;">BẢNG KÊ THU TIỀN CỦA THÀNH VIÊN</div>
-    <div style="text-align:center; font-style:italic; font-size:8.5pt; margin-bottom:2px;">${ngayStr}</div>
-    
-    <table style="width:100%; font-size:8.5pt; margin-bottom: 2px; border:none;"><tr>
-        <td style="border:none; padding:0;"><strong>Xã/Phường:</strong> ${gXa}</td>
-        <td style="text-align:center; border:none; padding:0;"><strong>Thôn/bản/TDP:</strong> ${gThon}</td>
-        <td style="text-align:right; border:none; padding:0;"><strong>Nhóm:</strong> ${gTenNhom} &nbsp;&nbsp;&nbsp;&nbsp; <span style="font-size:8pt; font-style:italic;">ĐVT: VND</span></td>
-    </tr></table>
-    ...
-
-                <table class="print-tbl">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width: 3%;">STT</th>
-                            <th rowspan="2" style="width: 6%;">Mã TV</th>
-                            <th rowspan="2" style="width: 14%;">Họ và tên</th>
-                            <th colspan="2" style="width: 16%;">Tình hình tiết kiệm - vay vốn</th>
-                            <th colspan="4" style="width: 10%;">Món vay</th>
-                            <th colspan="4" style="width: 16%;">Kế hoạch</th>
-                            <th colspan="4" style="width: 16%;">Thực thu (Để trống viết tay)</th>
-                            <th rowspan="2" style="width: 7%;">Chữ ký</th>
-                            <th rowspan="2" style="width: 8%;">Mã QR</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 8%;">Dư nợ vốn vay (Gốc + lãi)</th>
-                            <th style="width: 8%;">Số dư gốc TKBB</th>
-                            <th>12T</th><th>15T</th><th>18T</th><th>24T</th>
-                            <th style="width: 4%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 4%;">TKBB</th>
-                            <th style="width: 4%;">Lãi Phạt</th>
-                            <th style="width: 4%;">Tổng</th>
-                            <th style="width: 4%;">Vốn (gốc+lãi)</th>
-                            <th style="width: 4%;">TKBB</th>
-                            <th style="width: 4%;">Lãi phạt</th>
-                            <th style="width: 4%;">Tổng</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml}
-                        <tr style="font-weight:bold;">
-                            <td colspan="3" class="text-center">Tổng cộng</td>
-                            <td style="text-align:right;">${sDu.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sTk.toLocaleString('vi-VN')}</td>
-                            <td></td><td></td><td></td><td></td>
-                            <td style="text-align:right;">${sVo.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sTb.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sLa.toLocaleString('vi-VN')}</td>
-                            <td style="text-align:right;">${sNop.toLocaleString('vi-VN')}</td>
-                            <td></td><td></td><td></td><td></td><td></td><td></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 6px; font-size: 9pt;">
-                    <strong>Tổng số tiền dự thu bằng chữ:</strong> <i>${docSoTien(sNop)}</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <strong>Tổng số tiền thực thu bằng chữ:</strong> ........................................................................................
-                </div>
-
-                <table style="width:100%; margin-top:15px; font-size:9pt; text-align:center; border-collapse:collapse; border:none;">
-                    <tr>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Nhóm trưởng/Người nộp tiền</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                            <strong>${nhomTruongKy}</strong>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Cán bộ tín dụng</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Cán bộ thu tiền</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>Trưởng/Phó phòng Nghiệp vụ</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên)</span><br><br><br>
-                        </td>
-                        <td style="width:20%; vertical-align:top; border:none;">
-                            <strong>TM. Ban Giám đốc</strong><br><strong>Phó Giám đốc</strong><br><span style="font-size:8pt; font-style:italic;">(Ký, họ tên, đóng dấu)</span>
-                        </td>
-                    </tr>
-                </table>
-            </div>`;
-        });
-
-        if (countPrinted === 0) { 
-            alert("Không tìm thấy dữ liệu để in!"); 
-            document.getElementById("dynamicPrintStyle")?.remove(); 
-            document.body.classList.remove('printing-tab1-2'); 
-            document.title = originalTitle;
-            return; 
-        }
-
-        window.print();
-        
-        document.getElementById("dynamicPrintStyle")?.remove();
-        document.body.classList.remove('printing-tab1-2');
-        document.title = originalTitle;
-    }
-
-    function renderFolderView() {
-        let container = document.getElementById('qrCardsList'); container.innerHTML = '';
-        document.getElementById('folderTitle').innerText = "📁 Danh sách thẻ QR toàn thôn (Chỉ hiển thị thành viên phát sinh nộp)";
-        
-        let count = 0;
-        globalGroupedData.forEach(mem => {
-            let totalNop = mem.loans.reduce((s, l) => s + l.tongCong, 0);
-            if (totalNop <= 0 || !mem.qrBase64) return;
-            count++;
-
-            container.innerHTML += `<div class="qr-card">
-                <img src="${mem.qrBase64}" onclick="openModal('${mem.qrBase64}', '${mem.hoTen}')"><br>
-                <div style="font-weight:bold; margin-top:5px;">${mem.hoTen}</div>
-                <div style="font-size:11px; color:#0275d8;">${mem.sheetName} - Mã: ${mem.maTV}</div>
-                <div style="color:#d9534f; font-weight:bold; margin-top:3px;">${totalNop.toLocaleString('vi-VN')} đ</div>
-            </div>`;
-        });
-        document.getElementById('folderViewContainer').style.display = 'block';
-    }
-
-    function sendZaloToGroupLeader() {
-        let phone = document.getElementById('groupLeaderPhone_t1').value.trim().replace(/\D/g, '');
-        let total = 0; globalGroupedData.forEach(m => total += m.loans.reduce((s,l)=>s+l.tongCong,0));
-        let msg = `Kính gửi Nhóm trưởng,\nBảng kê tổng hợp thu tiền với tổng số tiền cần nộp là: ${total.toLocaleString('vi-VN')} VNĐ đã sẵn sàng. Nhờ anh/chị triển khai thu hộ!`;
-        window.open(`https://zalo.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    // --- XỬ LÝ CHỨC NĂNG 2 (AN SINH) ---
-    document.getElementById('logoFile_t2')?.addEventListener('change', function(e) {
-        let file = e.target.files[0];
-        if (file) { let reader = new FileReader(); reader.onload = evt => logoBase64_t2 = evt.target.result; reader.readAsDataURL(file); }
-    });
-
-    document.getElementById('excelAnSinhFile')?.addEventListener('change', async function(e) {
-        let file = e.target.files[0]; if (!file) return;
-        let reader = new FileReader();
-        
-        reader.onload = async function(evt) {
-            let workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
-            globalMembersData_t2 = []; let sheetsMap = new Map();
-
-            let targetSheetName = workbook.SheetNames.find(s => s.toLowerCase() !== 'thamso') || workbook.SheetNames[0];
-            let firstWs = workbook.Sheets[targetSheetName];
-            let firstData = XLSX.utils.sheet_to_json(firstWs, {header: 1});
-
-            let detectedDonVi = "QUỸ HỖ TRỢ PHỤ NỮ PHÁT TRIỂN TỈNH QUẢNG TRỊ";
-            let detectedMauSo = "Mẫu số: 38/TD";
-            let detectedPhongName = "";
-
-            for (let r = 0; r < Math.min(8, firstData.length); r++) {
-                let row = firstData[r]; if (!row) continue;
-                row.forEach(cell => {
-                    if (cell && typeof cell === 'string') {
-                        let text = cell.trim(), upper = text.toUpperCase();
-                        if (upper.includes("QUỸ HỖ TRỢ") || upper.includes("CHƯƠNG TRÌNH TÀI CHÍNH VI MÔ")) {
-                            if (!upper.includes("PHÒNG") && !upper.includes("CHI NHÁNH")) detectedDonVi = text;
-                        }
-                        if (upper.includes("MẪU SỐ")) detectedMauSo = text;
-                        if (upper.includes("BẢNG KÊ")) dynamicReportTitle = text;
-                        if (upper.includes("PHÒNG NGHIỆP VỤ") || upper.includes("CHI NHÁNH") || upper.includes("PHÒNG GIAO DỊCH")) {
-                            detectedPhongName = text;
-                        }
-                    }
-                });
-            }
-
-            if (detectedPhongName) {
-                metaInfo.chiNhanh = detectedPhongName;
-                let foundKey = detectPhongKeyFromName(detectedPhongName);
-                if (foundKey) {
-                    updateAllBankOptions(foundKey);
-                    let selectElem = document.getElementById('selectPhongNghiepVu');
-                    if (selectElem) selectElem.value = foundKey;
-                }
-            }
-
-            let membersMap = new Map();
-            workbook.SheetNames.forEach(sheetName => {
-                if (sheetName.toLowerCase() === 'thamso') return;
-                let ws = workbook.Sheets[sheetName], sheetData = XLSX.utils.sheet_to_json(ws, {header: 1});
-                let tenNhomSheet = sheetName.trim(), sheetXa = "Lệ Thủy", sheetThon = "Thôn Hồng Thủy";
-
-                for (let i = 0; i < Math.min(10, sheetData.length); i++) {
-                    let row = sheetData[i]; if (!row) continue;
-                    row.forEach(cell => {
-                        if (cell && typeof cell === 'string') {
-                            let text = cell.trim(), lower = text.toLowerCase();
-                            if (lower.includes("xã")) sheetXa = text.replace(/Xã\/Phường[:\s]*/gi, "").replace(/Xã[:\s]*/gi, "").trim();
-                            if (lower.includes("thôn") || lower.includes("cụm")) sheetThon = text.replace(/Thôn\/Bản\/TDP[:\s]*/gi, "").replace(/Thôn[:\s]*/gi, "").trim();
-                        }
-                    });
-                }
-
-                if (!sheetsMap.has(tenNhomSheet)) sheetsMap.set(tenNhomSheet, []);
-
-                for (let i = 0; i < sheetData.length; i++) {
-                    let row = sheetData[i];
-                    if (row && row[0] && !isNaN(row[0]) && row[2]) {
-                        let stt = row[0], maTV = String(row[1] || '').trim(), hoTen = String(row[2] || '').trim();
-                        let soSo = String(row[3] || '').trim(), soDu = parseFloat(row[4]) || 0;
-                        let tongCong = parseFloat(row[5]) || parseFloat(row[10]) || 0;
-
-                        let key = maTV !== '' ? `${tenNhomSheet}_${maTV}` : `${tenNhomSheet}_${hoTen}`;
-                        if (!membersMap.has(key)) {
-                            membersMap.set(key, {
-                                sheetName: tenNhomSheet, sheetXa, sheetThon, sheetTenNhom: tenNhomSheet,
-                                donVi: detectedDonVi, chiNhanh: metaInfo.chiNhanh, mauSo: detectedMauSo,
-                                stt, maTV, hoTen, soSo, soDuTkbb: 0, tongCong: 0,
-                                soSoList: [], soDuList: [], tongCongList: [], qrBase64: ""
-                            });
-                        }
-                        let mem = membersMap.get(key);
-                        mem.soDuTkbb += soDu; mem.tongCong += tongCong;
-                        if (soSo) {
-                            mem.soSoList.push(soSo);
-                            mem.soDuList.push(soDu);
-                            mem.tongCongList.push(tongCong);
-                        }
-                    }
-                }
-            });
-
-            globalMembersData_t2 = Array.from(membersMap.values());
-            
-            let selectPDF = document.getElementById('selectGroupPDF_t2');
-            let optHtml = '<option value="ALL">-- Tất cả các nhóm trong file --</option>';
-            sheetsMap.forEach((m, gName) => optHtml += `<option value="${gName}">Nhóm: ${gName}</option>`);
-            if (selectPDF) selectPDF.innerHTML = optHtml;
-
-            let bankId = document.getElementById('bankId_t2').value.trim();
-            let bankAcc = getSelectedBankAccount('t2');
-            let bankAccName = document.getElementById('bankAccName_t2').value.trim();
-            let contentPrefix = document.getElementById('contentPrefix_t2').value.trim();
-
-            for (let mem of globalMembersData_t2) {
-                if (mem.tongCong > 0) {
-                    let hoTenKD = removeVietnameseTones(mem.hoTen);
-                    let addInfoStr = contentPrefix.replace(/\[Mã TV\]/gi, mem.maTV).replace(/\[Họ tên\]/gi, hoTenKD).replace(/\[Họ và tên\]/gi, hoTenKD);
-                    if (!contentPrefix.toLowerCase().includes("[mã tv]") && !contentPrefix.toLowerCase().includes(mem.maTV.toLowerCase())) addInfoStr = `${mem.maTV} ${addInfoStr}`;
-                    let rawUrl = `https://img.vietqr.io/image/${bankId}-${bankAcc}-print.png?amount=${mem.tongCong}&addInfo=${encodeURIComponent(addInfoStr.trim())}&accountName=${encodeURIComponent(bankAccName)}`;
-                    mem.qrBase64 = await getBase64FromImageUrl(rawUrl);
-                } else mem.qrBase64 = "";
-            }
-            displayPreview_t2(globalMembersData_t2);
-        };
-        reader.readAsArrayBuffer(file);
-    });
-
-    function displayPreview_t2(data) {
-        let tbody = document.getElementById('previewBody_t2'); if (!tbody) return;
-        tbody.innerHTML = '';
-        document.getElementById('rowCount_t2').innerText = data.length;
-
-        let sumSoDu = 0, sumNop = 0;
-        data.forEach(mem => {
-            sumSoDu += mem.soDuTkbb; sumNop += mem.tongCong;
-            let combinedSoSo = mem.soSoList && mem.soSoList.length > 0 ? mem.soSoList.join('<br>') : (mem.soSo || '-');
-            let qrHtml = mem.tongCong > 0 ? `<img src="${mem.qrBase64}" class="thumb-qr" onclick="openModal('${mem.qrBase64}', '${mem.hoTen}')">` : 'Không có';
-
-            tbody.innerHTML += `<tr>
-                <td class="text-center">${mem.stt}</td>
-                <td style="font-weight:bold; color:#0275d8;">${mem.sheetName}</td>
-                <td class="text-center">${mem.maTV}</td>
-                <td>${mem.hoTen}</td>
-                <td class="text-center"><strong>${combinedSoSo}</strong></td>
-                <td class="text-right">${mem.soDuTkbb ? mem.soDuTkbb.toLocaleString('vi-VN') : '-'}</td>
-                <td class="text-right" style="color:#d9534f; font-weight:bold;">${mem.tongCong ? mem.tongCong.toLocaleString('vi-VN') : '-'}</td>
-                <td class="text-center">${qrHtml}</td>
-            </tr>`;
-        });
-        document.getElementById('preview-section_t2').style.display = 'block';
-    }
-
-    // --- XUẤT PHIẾU THU AN SINH PDF (TAB 2) - CÓ LOGO GÓC TRÁI ---
-    function generatePrintPDF_t2() {
-        document.body.classList.add('printing-tab1-2');
-        let selectedGroup = document.getElementById('selectGroupPDF_t2').value;
-        let bankAcc = getSelectedBankAccount('t2');
-        let groupLeaderName = document.getElementById('groupLeaderName_t2').value.trim();
-
-        if (!bankAcc) { alert("Vui lòng chọn số tài khoản ngân hàng!"); document.body.classList.remove('printing-tab1-2'); return; }
-
-        let rawDateVal = document.getElementById('inputNgayThu_t2').value;
-        let ngayStr = "Ngày ...... tháng ...... năm ......";
-        if (rawDateVal) {
-            let p = rawDateVal.split('-');
-            if (p.length === 3) ngayStr = `Ngày ${parseInt(p[2])} tháng ${parseInt(p[1])} năm ${p[0]}`;
-        }
-
-        let originalTitle = document.title;
-        let groupNameForFile = selectedGroup === "ALL" ? "Toan_Bo_Cac_Nhom_AnSinh" : selectedGroup.replace(/[\/\\?%*:|"<>]/g, '_');
-        document.title = `PhieuThu_AnSinh_${groupNameForFile}_${rawDateVal || '2026'}`;
-
-      let styleSheet = document.createElement("style");
-        styleSheet.type = "text/css"; styleSheet.id = "dynamicPrintStyle_t1";
-        styleSheet.innerText = `
-            @page { size: A4 portrait; margin: 5mm 10mm; }
-            body { margin: 0; padding: 0; }
-            
-            /* Ép toàn bộ container phiếu thu trên trang 1 dính sát lên trên */
-            .phieuthu-container, .phieuthu-print-container {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-                box-sizing: border-box;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                page-break-after: always;
-            }
-            
-            /* Riêng khối đầu tiên triệt tiêu mọi khoảng cách phía trên */
-            .phieuthu-container:first-of-type, 
-            .phieuthu-print-container:first-of-type {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-                page-break-before: avoid !important;
-            }
-        `;
-        document.head.appendChild(styleSheet);
-
-        let printArea = document.getElementById('printArea'); printArea.innerHTML = '';
-        let countPrinted = 0;
-
-        globalMembersData_t2.forEach(mem => {
-            if (selectedGroup !== "ALL" && mem.sheetName !== selectedGroup) return;
-            if (mem.tongCong <= 0) return;
-            countPrinted++;
-
-            let rowsHtml = '', totalSoDu = 0, totalNop = 0;
-            for (let i = 0; i < mem.soSoList.length; i++) {
-                let sDu = mem.soDuList[i] || 0, sNop = mem.tongCongList[i] || 0;
-                totalSoDu += sDu; totalNop += sNop;
-                rowsHtml += `<tr><td class="text-center" style="font-weight:bold;">${mem.soSoList[i] || '---'}</td><td class="text-center">${sDu > 0 ? sDu.toLocaleString('vi-VN') : '-'}</td><td class="text-center" style="font-weight:bold;">${sNop > 0 ? sNop.toLocaleString('vi-VN') : '-'}</td></tr>`;
-            }
-
-            if (mem.soSoList.length > 1) {
-                rowsHtml += `<tr style="font-weight:bold; background: #fafafa;"><td class="text-center">TỔNG CỘNG</td><td class="text-center">${totalSoDu.toLocaleString('vi-VN')}</td><td class="text-center">${totalNop.toLocaleString('vi-VN')}</td></tr>`;
-            }
-
-            let logoTagHtml = logoBase64_t2 ? `<img src="${logoBase64_t2}" style="height: 42px; width: auto; object-fit: contain; margin-right: 8px;">` : '';
-
-            printArea.innerHTML += `<div class="bangke-print-container">
-                <table style="width:100%; border:none;"><tr>
-                    <td style="border:none;">
-                        <div style="display: flex; align-items: center;">
-                            ${logoTagHtml}
-                            <div>
-                                <strong style="font-size: 10pt; text-transform: uppercase;">${mem.donVi}</strong><br>
-                                <span style="font-size: 9pt;">${formatChiNhanhHtml(metaInfo.chiNhanh)}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="text-align:right; vertical-align:top; border:none;"><strong style="font-size: 9.5pt;">${mem.mauSo}</strong></td>
-                </tr></table>
-
-                <div style="text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 10px 0 3px 0;">${dynamicReportTitle}</div>
-                <div style="text-align: center; font-style: italic; font-size: 9.5pt; margin-bottom: 6px;">${ngayStr}</div>
-                
-                <div style="text-align: center; font-size: 9.5pt; margin-bottom: 6px;">
-                    <strong>Xã/Phường:</strong> ${mem.sheetXa} &nbsp;&nbsp;&nbsp;&nbsp; 
-                    <strong>Thôn/Bản:</strong> ${mem.sheetThon} &nbsp;&nbsp;&nbsp;&nbsp; 
-                    <strong>Nhóm:</strong> ${mem.sheetName}
-                </div>
-
-                <table style="width:100%; margin-bottom: 4px; font-size: 10pt; border:none;"><tr>
-                    <td style="border:none; text-align: left;"><strong>Mã TV:</strong> ${mem.maTV}</td>
-                    <td style="border:none; text-align: right;">${groupLeaderName ? `<strong>Nhóm trưởng:</strong> ${groupLeaderName}` : ''}</td>
-                </tr><tr>
-                    <td colspan="2" style="border:none; text-align: left; padding-top: 3px;"><strong>Họ và tên thành viên:</strong> ${mem.hoTen}</td>
-                </tr></table>
-
-                <table class="print-tbl" style="width:100%; border-collapse:collapse; margin: 6px 0;">
-                    <thead><tr><th style="width: 30%;">Số sổ</th><th style="width: 35%;">Số dư TKBB An Sinh</th><th style="width: 35%;">Số tiền nộp (Kế hoạch)</th></tr></thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-
-                <div style="margin-top: 6px; font-size: 10pt;"><strong>Số tiền bằng chữ:</strong> <i>${docSoTien(mem.tongCong)}</i></div>
-
-                <div style="text-align:center; margin-top:10px;">
-                    <div style="font-size: 9.5pt; font-weight: bold; margin-bottom: 2px;">MÃ QR CHUYỂN KHOẢN VIETQR</div>
-                    <img src="${mem.qrBase64}" style="width: 170px; height: 195px; border: 1px solid #ccc; padding: 3px; background: #fff; object-fit: contain;">
-                </div>
-            </div>`;
-        });
-
-        if (countPrinted === 0) { 
-            alert("Không có thành viên An Sinh phát sinh tiền nộp để in!"); 
-            document.getElementById("dynamicPrintStyle_t2")?.remove(); 
-            document.body.classList.remove('printing-tab1-2'); 
-            document.title = originalTitle;
-            return; 
-        }
-
-        window.print();
-        
-        document.getElementById("dynamicPrintStyle_t2")?.remove();
-        document.body.classList.remove('printing-tab1-2');
-        document.title = originalTitle;
-    }
-
-    function renderFolderView_t2() {
-        let container = document.getElementById('qrCardsList_t2'); container.innerHTML = '';
-        document.getElementById('folderTitle_t2').innerText = "📁 Danh sách thẻ QR An Sinh toàn thôn";
-        
-        let count = 0;
-        globalMembersData_t2.forEach(mem => {
-            if (mem.tongCong <= 0 || !mem.qrBase64) return;
-            count++;
-            container.innerHTML += `<div class="qr-card">
-                <img src="${mem.qrBase64}" onclick="openModal('${mem.qrBase64}', '${mem.hoTen}')"><br>
-                <div style="font-weight:bold; margin-top:5px;">${mem.hoTen}</div>
-                <div style="font-size:11px; color:#0275d8;">${mem.sheetName} - Mã: ${mem.maTV}</div>
-                <div style="color:#d9534f; font-weight:bold; margin-top:3px;">${mem.tongCong.toLocaleString('vi-VN')} đ</div>
-            </div>`;
-        });
-        document.getElementById('folderViewContainer_t2').style.display = 'block';
-    }
-
-    function sendZaloToGroupLeader_t2() {
-        let phone = document.getElementById('groupLeaderPhone_t2').value.trim().replace(/\D/g, '');
-        let total = 0; globalMembersData_t2.forEach(m => total += m.tongCong);
-        let msg = `Kính gửi Nhóm trưởng,\nBảng kê Tiết kiệm Bắt buộc An Sinh tổng hợp với tổng số tiền là: ${total.toLocaleString('vi-VN')} VNĐ đã hoàn tất. Nhờ anh/chị triển khai thu hộ!`;
-        window.open(`https://zalo.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    // --- XỬ LÝ CHỨC NĂNG 3 (KẾ HOẠCH TRẢ NỢ) ---
-    function updateLoanTenure() {
-        const productSelect = document.getElementById("loanProduct");
-        const tenureInput = document.getElementById("loanTenure");
-        tenureInput.value = productSelect.value;
-        
-        const limitInput = document.getElementById("loanLimit");
-        if (productSelect.value === "18") {
-            limitInput.value = "4,005,000";
-        } else if (productSelect.value === "24") {
-            limitInput.value = "20,640,000";
-        }
-
-        calculateRepayment();
-    }
-
-    function calculateRepayment() {
-        const limitInput = document.getElementById("loanLimit");
-        const tenureInput = document.getElementById("loanTenure");
-        
-        const principalInput = document.getElementById("principalAmount");
-        const interestInput = document.getElementById("interestAmount");
-        const totalPIInput = document.getElementById("totalPrincipalInterest");
-        const savingsInput = document.getElementById("savingsAmount");
-        const totalInput = document.getElementById("totalRepayment");
-
-        let limitRaw = limitInput.value.replace(/,/g, '');
-        let limitVal = parseFloat(limitRaw);
-        let tenureVal = parseFloat(tenureInput.value);
-
-        if (!isNaN(limitVal)) {
-            limitInput.value = limitVal.toLocaleString('en-US');
-        }
-
-        if (!isNaN(limitVal) && !isNaN(tenureVal) && tenureVal > 0) {
-            let principalVal = 0;
-            let interestVal = 0;
-            let totalPIVal = 0;
-
-          if (tenureVal === 12) {
-                // Áp dụng công thức theo ví dụ vay 2.775.000 trả 250.000/tháng (Gốc: 231.250, Lãi: 18.750 tỷ lệ tương ứng)
-                principalVal = Math.round(limitVal * (231250 / 2775000));
-                interestVal = Math.round(limitVal * (18750 / 2775000));
-            } else if (tenureVal === 15) {
-                // Công thức 15 tháng theo ví dụ trước (Vay 10.896.000 trả 800.000/tháng)
-                principalVal = Math.round(limitVal * (726400 / 10896000));
-                interestVal = Math.round(limitVal * (73600 / 10896000));
-            } else if (tenureVal === 18) {
-                principalVal = Math.round(limitVal * (222500 / 4005000));
-                interestVal = Math.round(limitVal * (27500 / 4005000));
-            } else if (tenureVal === 24) {
-                principalVal = Math.round(limitVal / tenureVal);
-                interestVal = Math.round(limitVal * (210000 / 30960000));
-            } else {
-                principalVal = Math.round(limitVal / tenureVal);
-                interestVal = Math.round(limitVal * 0.0068); 
-            }
-            
-            totalPIVal = principalVal + interestVal;
-
-            principalInput.value = principalVal.toLocaleString('en-US');
-            interestInput.value = interestVal.toLocaleString('en-US');
-            totalPIInput.value = totalPIVal.toLocaleString('en-US');
-
-            let savingsVal = parseFloat(savingsInput.value.replace(/,/g, '')) || 0;
-            if (savingsInput.value && !isNaN(savingsVal)) {
-                savingsInput.value = savingsVal.toLocaleString('en-US');
-            }
-
-            let finalTotal = totalPIVal + savingsVal;
-            totalInput.value = finalTotal.toLocaleString('en-US');
-
-            renderScheduleTable(limitVal, tenureVal, principalVal, interestVal, totalPIVal);
-        }
-    }
-
-    
-		
-		function renderScheduleTable(limitVal, tenureVal, principalVal, interestVal, totalPIVal) {
-    let numPeriods = tenureVal; // <-- Lấy đúng theo số tháng kỳ hạn thực tế (18 tháng sẽ ra đủ 18 kỳ)
-    let initialTotalBalance = totalPIVal * numPeriods;
-        document.getElementById("lblLoanLimit").innerText = "Số tiền vay: " + limitVal.toLocaleString('vi-VN');
-        document.getElementById("lblTenure").innerText = "Kỳ hạn: " + tenureVal + " tháng";
-        document.getElementById("lblStartBalance").innerText = "Dư đầu gốc, lãi: " + initialTotalBalance.toLocaleString('vi-VN');
-        document.getElementById("lblInterestRate").innerText = "Lãi suất: 0.68%/tháng";
-
-        const tbody = document.getElementById("scheduleBody");
-        tbody.innerHTML = "";
-
-        let currentBalance = initialTotalBalance;
-
-        for (let i = 1; i <= numPeriods; i++) {
-            currentBalance -= totalPIVal;
-            if (i === numPeriods || currentBalance < 0) currentBalance = 0;
-
-            let rowHTML = `
-                <tr>
-                    <td>${i}</td>
-                    <td class="text-right">${principalVal.toLocaleString('vi-VN')}</td>
-                    <td class="text-right">${interestVal.toLocaleString('vi-VN')}</td>
-                    <td class="text-right">${totalPIVal.toLocaleString('vi-VN')}</td>
-                    <td class="text-right">${currentBalance.toLocaleString('vi-VN')}</td>
-                    <td></td>
-                </tr>
-            `;
-            tbody.innerHTML += rowHTML;
-        }
-    }
-
-
-   // Hàm tạo mã QR có ràng buộc bắt buộc phải nhập Mã & Tên thành viên
-    function generateVietQR() {
-        let memberId = document.getElementById("memberId").value.trim();
-        let memberName = document.getElementById("memberName").value.trim();
-
-        // Kiểm tra điều kiện bắt buộc
-        if (!memberId || !memberName) {
-            alert("⚠️ Vui lòng nhập đầy đủ Mã thành viên và Tên thành viên trước khi tạo mã QR!");
-            if (!memberId) {
-                document.getElementById("memberId").focus();
-            } else {
-                document.getElementById("memberName").focus();
-            }
-            return; // Dừng lại, không cho tạo QR nếu thiếu thông tin
-        }
-
-        let bankInput = document.getElementById("bankCode").value.trim().toLowerCase();
-        let bankBin = bankBins[bankInput] || document.getElementById("bankCode").value.trim();
-
-        const accountNo = getSelectedBankAccount('accountNo');
-        const accountName = document.getElementById("accountName").value.trim();
-        
-        let totalRaw = document.getElementById("totalRepayment").value.replace(/,/g, '');
-        let amount = parseInt(totalRaw) || 0;
-
-        let memo = `${memberId} ${memberName} nopgoclaitk`.trim();
-
-        const payload = {
-            accountNo: accountNo,
-            accountName: accountName,
-            acqId: bankBin,
-            amount: amount,
-            addInfo: memo,
-            template: "compact2"
-        };
-
-        if (!accountNo) { alert("Vui lòng chọn số tài khoản nhận tiền!"); return; }
-
-        let infoElem = document.getElementById("scheduleMemberInfo");
-        if (infoElem) {
-            infoElem.style.display = "none";
-        }
-
-        fetch("https://api.vietqr.io/v2/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.code === "00" && data.data && data.data.qrDataURL) {
-                const qrImg = document.getElementById("qrImage");
-                const downloadBtn = document.getElementById("downloadBtn");
-                const qrResult = document.getElementById("qrResult");
-
-                qrImg.src = data.data.qrDataURL;
-                downloadBtn.href = data.data.qrDataURL;
-                downloadBtn.download = `VietQR_${memberId}_${memberName.replace(/[\/\\?%*:|"<>]/g, '_')}.png`;
-                qrResult.style.display = "block";
-
-                const headerQrImg = document.getElementById("headerQrImage");
-                headerQrImg.src = data.data.qrDataURL;
-                headerQrImg.style.display = "inline-block";
-            } else {
-                alert("Không thể tạo mã QR. Vui lòng kiểm tra lại thông tin ngân hàng hoặc số tài khoản!");
-            }
-        })
-       .catch(err => {
-            console.error("Chi tiết lỗi VietQR:", err);
-            alert("Lỗi kết nối tới dịch vụ VietQR! Chi tiết: " + err.message);
-        });
-    }
-   
-   
-    function printScheduleTab() {
-        document.body.classList.remove('printing-tab1-2');
-        document.getElementById('printArea').innerHTML = '';
-
-        let memberId = document.getElementById("memberId").value.trim();
-        let memberName = document.getElementById("memberName").value.trim();
-        
-        let originalTitle = document.title;
-        let fileIdentifier = (memberId && memberName) ? `${memberId}_${memberName.replace(/[\/\\?%*:|"<>]/g, '_')}` : (memberId || 'KeHoachTraNo');
-        document.title = `KeHoachTraNo_${fileIdentifier}`;
-
-        window.print();
-
-        document.title = originalTitle;
-    }
-
 </script>
-
 </body>
 </html>
