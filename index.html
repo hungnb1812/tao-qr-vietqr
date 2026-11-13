@@ -18,7 +18,12 @@
       align-items: center;
       min-height: 100vh;
     }
-
+.schedule-subtitle {
+  white-space: nowrap; /* Giữ nguyên một hàng ngang, không tự động xuống dòng */
+  font-size: 13px;     /* Bạn có thể thu nhỏ cỡ chữ lại một chút (ví dụ từ 12px đến 14px) để vừa khít với khổ A4 */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Nếu quá dài sẽ tự động rút gọn bằng dấu ... để tránh vỡ khung */
+}
     /* MODAL ĐĂNG NHẬP / CHỌN PHÒNG BAN ĐẦU */
     .modal-overlay {
       position: fixed;
@@ -191,6 +196,7 @@
     /* TAB STYLING */
     .nav-tabs {
       display: flex;
+      flex-wrap: wrap;
       gap: 4px;
       margin-bottom: 0;
       padding-bottom: 0;
@@ -200,8 +206,8 @@
       z-index: 1;
     }
     .tab-btn {
-      padding: 12px 20px;
-      font-size: 14.5px;
+      padding: 12px 16px;
+      font-size: 13.5px;
       font-weight: 700;
       color: #4b5563;
       background: #e5e7eb;
@@ -293,12 +299,13 @@
       padding-top: 10px;
     }
     .schedule-header-qr {
-      width: 110px;
+      width: 130px;
       text-align: right;
+      padding-top: 20px;
     }
     .schedule-header-qr img {
-      width: 100px;
-      height: 100px;
+      width: 120px;
+      height: 120px;
       border: 1px solid #ddd;
       border-radius: 4px;
     }
@@ -395,6 +402,9 @@
         padding: 0;
       }
     }
+	
+	
+	
   </style>
 </head>
 <body>
@@ -410,7 +420,7 @@
     </div>
 
     <div class="login-form-group">
-      <label>Phòng Nghiệp vụ:</label>
+      <label>Phòng giao dịch / Nghiệp vụ:</label>
       <select id="loginPhongSelect">
         <option value="LE_THUY">Phòng Nghiệp vụ số 01 (Lệ Thủy)</option>
         <option value="QUANG_NINH">Phòng Nghiệp vụ số 01 (Quảng Ninh)</option>
@@ -432,213 +442,233 @@
 
 <!-- THANH TAB CHỌN CHỨC NĂNG -->
 <div class="nav-tabs">
-  <button class="tab-btn active" id="tabLoanBtn" onclick="switchTab('loan')">📄 TẠO MÃ QR VÀ IN BẢNG KẾ HOẠCH GỐC LÃI</button>
+  <button class="tab-btn active" id="tabLoanBtn" onclick="switchTab('loan')">📄 TẠO MÃ QR & IN BẢNG KẾ HOẠCH</button>
   <button class="tab-btn" id="tabAnSinhBtn" onclick="switchTab('ansinh')">💚 TẠO MÃ QR TKBB AN SINH</button>
+  <button class="tab-btn" id="tabLoan5PercentBtn" onclick="switchTab('loan5percent')">🛡️ TẠO MÃ QR CHO THÀNH VIÊN TỰ NHẬP SỐ TIỀN</button>
 </div>
 
-<!-- FORM CHÍNH (KẾ HOẠCH TRẢ NỢ VAY) -->
-<div class="container" id="loanTabContent">
+<!-- FORM CHÍNH (KẾ HOẠCH TRẢ NỢ VAY) - DÀN ĐỀU TOÀN TRANG -->
+<div class="container" id="loanTabContent" style="max-width: 1100px; margin: 0 auto;">
+  
+  <!-- CẤU HÌNH NGÂN HÀNG Ở TRÊN (TRẢI RỘNG TOÀN TRANG) -->
   <div class="section-title">
     🏦 Cấu hình Ngân hàng
   </div>
-  <div class="form-grid">
+  <div class="form-grid" style="grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
     <div class="form-group">
-      <label>Mã Ngân Hàng (VD: Agribank, VietinBank):</label>
-      <input type="text" id="bankCode" value="Agribank">
+      <label>Mã Ngân Hàng (VD: Agribank):</label>
+      <input type="text" id="bankCode" value="Agribank" style="width: 100%; box-sizing: border-box;">
     </div>
     <div class="form-group">
       <label>Số Tài Khoản Nhận Tiền:</label>
-      <select id="accountNo"></select>
+      <select id="accountNo" style="width: 100%; box-sizing: border-box;"></select>
     </div>
     <div class="form-group">
       <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
-      <input type="text" id="accountName" value="QUY HO TRO PHU NU PT TINH QUANG TRI">
+      <input type="text" id="accountName" value="QUY HO TRO PHU NU PT TINH QUANG TRI" style="width: 100%; box-sizing: border-box;">
     </div>
     <div class="form-group">
       <label>Nội dung chuyển khoản mẫu:</label>
-      <input type="text" id="transferMemo" value="[Mã TV] [Họ tên] nopgoclaitk">
+      <input type="text" id="transferMemo" value="[WD][Mã TV][Họ tên]GLTK" style="width: 100%; box-sizing: border-box;">
     </div>
   </div>
 
-  <div class="section-title">
-    👤 Thông tin thành viên:
-  </div>
-  <div class="form-grid">
-    <div class="form-group">
-      <label>Mã Thành viên: <span class="required">(*)</span></label>
-      <input type="text" id="memberId" placeholder="Nhập mã TV">
+  <!-- BỐ CỤC DÀN ĐỀU: TRÁI LÀ THÔNG TIN + MÓN VAY, PHẢI LÀ QR NẰM NGANG HÀNG VỚI THÀNH VIÊN -->
+  <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+    
+    <!-- CỘT BÊN TRÁI -->
+    <div>
+      <div class="section-title">
+        👤 Thông tin thành viên & 📄 Sản phẩm vay:
+      </div>
+      
+      <!-- HÀNG THÔNG TIN THÀNH VIÊN VÀ SỐ LƯỢNG MÓN VAY -->
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div class="form-group">
+          <label>Mã Thành viên: <span class="required">(*)</span></label>
+          <input type="text" id="memberId" placeholder="Nhập mã TV" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div class="form-group">
+          <label>Tên thành viên: <span class="required">(*)</span></label>
+          <input type="text" id="memberName" placeholder="Nhập họ và tên" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div class="form-group">
+          <label>Số lượng món vay: <span class="required">(*)</span></label>
+          <select id="numLoanProducts" onchange="toggleLoanProducts()" style="font-weight: 600; color: #4f46e5; width: 100%; box-sizing: border-box;">
+            <option value="1" selected>01 Món vay</option>
+            <option value="2">02 Món vay</option>
+            <option value="3">03 Món vay</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- KHU VỰC CÁC MÓN VAY -->
+      <div id="loanItemsFlexContainer" style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- MÓN VAY THỨ NHẤT -->
+        <div id="subLoanBox1" style="background: #fdf8f6; border: 1px solid #fed7aa; padding: 20px; border-radius: 8px; width: 100%; box-sizing: border-box;">
+          <div style="font-weight: 700; color: #c2410c; margin-bottom: 14px; font-size: 15px;">📦 Món vay thứ nhất:</div>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label>Sản phẩm vay:</label>
+              <select id="loanProduct1" onchange="updateLoanTenure(1)" style="width: 100%;">
+                <option value="12" selected>Sản phẩm 12 tháng</option>
+                <option value="15">Sản phẩm 15 tháng</option>
+                <option value="18">Sản phẩm 18 tháng</option>
+                <option value="24">Sản phẩm 24 tháng</option>
+                <option value="36">Sản phẩm 36 tháng</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Thời hạn vay (tháng):</label>
+              <input type="text" id="loanTenure1" value="12" readonly style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Chọn Hạn mức:</label>
+              <select id="loanLimit1" onchange="onLimitSelectChange(1)" style="font-weight: 600; color: #0284c7; width: 100%;">
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số tiền gốc món 1:</label>
+              <input type="text" id="principalAmount1" value="" readonly style="background-color: #f8fafc; width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Số tiền lãi món 1:</label>
+              <input type="text" id="interestAmount1" value="" readonly style="background-color: #f8fafc; width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Tiết kiệm BB (Món 1):</label>
+              <input type="text" id="savingsAmount1" value="150,000" oninput="calculateRepayment()" placeholder="150,000" style="width: 100%;">
+            </div>
+            <div class="form-group" style="grid-column: span 1;">
+              <label>Tổng Gốc + Lãi món 1:</label>
+              <input type="text" id="totalPI1" value="" style="background-color: #f0fdf4; font-weight: bold; color: #15803d; width: 100%;" readonly>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label>Tổng hoàn trả món 1 (Gốc + Lãi + TKBB):</label>
+              <input type="text" id="totalPISavings1" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c; width: 100%;" readonly>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÓN VAY THỨ HAI -->
+        <div class="sub-loan-box" id="subLoanBox2" style="background: #fdf8f6; border: 1px solid #fed7aa; padding: 20px; border-radius: 8px; width: 100%; box-sizing: border-box; display: none;">
+          <div style="font-weight: 700; color: #c2410c; margin-bottom: 14px; font-size: 15px;">📦 Món vay thứ hai:</div>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label>Sản phẩm vay:</label>
+              <select id="loanProduct2" onchange="updateLoanTenure(2)" style="width: 100%;">
+                <option value="12" selected>Sản phẩm 12 tháng</option>
+                <option value="15">Sản phẩm 15 tháng</option>
+                <option value="18">Sản phẩm 18 tháng</option>
+                <option value="24">Sản phẩm 24 tháng</option>
+                <option value="36">Sản phẩm 36 tháng</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Thời hạn vay (tháng):</label>
+              <input type="text" id="loanTenure2" value="12" readonly style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Chọn Hạn mức:</label>
+              <select id="loanLimit2" onchange="onLimitSelectChange(2)" style="font-weight: 600; color: #0284c7; width: 100%;">
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số tiền gốc món 2:</label>
+              <input type="text" id="principalAmount2" value="" readonly style="background-color: #f8fafc; width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Số tiền lãi món 2:</label>
+              <input type="text" id="interestAmount2" value="" readonly style="background-color: #f8fafc; width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Tổng hoàn trả món 2 (Gốc + Lãi):</label>
+              <input type="text" id="totalPI2" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c; width: 100%;" readonly>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÓN VAY THỨ BA -->
+        <div class="sub-loan-box" id="subLoanBox3" style="background: #fdf8f6; border: 1px solid #fed7aa; padding: 20px; border-radius: 8px; width: 100%; box-sizing: border-box; display: none;">
+          <div style="font-weight: 700; color: #c2410c; margin-bottom: 14px; font-size: 15px;">📦 Món vay thứ ba:</div>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label>Sản phẩm vay:</label>
+              <select id="loanProduct3" onchange="updateLoanTenure(3)" style="width: 100%;">
+                <option value="12" selected>Sản phẩm 12 tháng</option>
+                <option value="15">Sản phẩm 15 tháng</option>
+                <option value="18">Sản phẩm 18 tháng</option>
+                <option value="24">Sản phẩm 24 tháng</option>
+                <option value="36">Sản phẩm 36 tháng</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Thời hạn vay (tháng):</label>
+              <input type="text" id="loanTenure3" value="12" readonly style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Chọn Hạn mức:</label>
+              <select id="loanLimit3" onchange="onLimitSelectChange(3)" style="font-weight: 600; color: #0284c7; width: 100%;">
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số tiền gốc món 3:</label>
+              <input type="text" id="principalAmount3" value="" readonly style="background-color: #f8fafc; width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Số tiền lãi món 3:</label>
+              <input type="text" id="interestAmount3" value="" readonly style="background-color: #f8fafc; width: 100%;">
+            </div>
+            <div class="form-group">
+              <label>Tổng hoàn trả món 3 (Gốc + Lãi):</label>
+              <input type="text" id="totalPI3" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c; width: 100%;" readonly>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TỔNG KẾ HOẠCH VÀ CHỌN DẠNG BẢNG KẾ HOẠCH -->
+      <div style="margin-top: 16px; background: #eff6ff; padding: 16px; border-radius: 8px; border: 1px solid #bfdbfe;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="color: #1e3a8a; font-size: 14px; font-weight: 600;">📊 Tổng số tiền hoàn trả: <span class="required">(*)</span></label>
+            <input type="text" id="totalRepayment" value="" style="background-color: #ffffff; font-weight: bold; color: #1e3a8a; font-size: 15px; width: 100%; box-sizing: border-box;" oninput="formatManualTotalRepayment(this)">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="color: #3b3086; font-size: 14px; font-weight: 600;">📋 Chọn Dạng Bảng kế hoạch: <span class="required">(*)</span></label>
+            <select id="scheduleFormat" style="border-color: #818cf8; font-weight: 600; background-color: #f5f3ff; width: 100%; box-sizing: border-box; height: 38px;">
+              <option value="QUY" selected>Dạng Quỹ (Ban Giám Đốc)</option>
+              <option value="TCVM">Dạng TCVM (Ban Quản Lý)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nút tạo mã QR phía dưới -->
+      <div style="margin-top: 12px;">
+        <button class="btn-submit" style="width: 100%; padding: 12px 24px;" onclick="generateVietQR()">
+          📱 Tạo mã VietQR Tổng Hợp & Hiển thị Bảng Kế Hoạch
+        </button>
+      </div>
+
     </div>
-    <div class="form-group">
-      <label>Tên thành viên: <span class="required">(*)</span></label>
-      <input type="text" id="memberName" placeholder="Nhập họ và tên">
-    </div>
-  </div>
 
-  <div class="section-title">
-    📄 Thông tin sản phẩm vay:
-  </div>
-  
-  <div class="form-group" style="margin-bottom: 16px;">
-    <label>Số lượng món vay của thành viên: <span class="required">(*)</span></label>
-    <select id="numLoanProducts" onchange="toggleLoanProducts()" style="font-weight: 600; color: #4f46e5;">
-      <option value="1" selected>01 Món vay</option>
-      <option value="2">02 Món vay</option>
-      <option value="3">03 Món vay</option>
-    </select>
-  </div>
+    <!-- CỘT BÊN PHẢI: ẢNH QR VÀ TIÊU ĐỀ NẰM NGANG HÀNG VỚI THÔNG TIN THÀNH VIÊN -->
+    <div style="position: sticky; top: 20px;">
+      <div style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 8px; font-weight: 700; color: #1e293b; font-size: 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <span>📱</span> Kết quả ảnh QR Tổng Hợp
+      </div>
 
-  <!-- MÓN VAY THỨ 1 -->
-  <div style="background: #fdf8f6; border: 1px solid #fed7aa; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
-    <div style="font-weight: 700; color: #c2410c; margin-bottom: 10px;">📦 Món vay thứ nhất:</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Sản phẩm vay:</label>
-        <select id="loanProduct1" onchange="updateLoanTenure(1)">
-          <option value="12" selected>Sản phẩm 12 tháng</option>
-          <option value="15">Sản phẩm 15 tháng</option>
-          <option value="18">Sản phẩm 18 tháng</option>
-          <option value="24">Sản phẩm 24 tháng</option>
-          <option value="36">Sản phẩm 36 tháng</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Thời hạn vay (tháng):</label>
-        <input type="text" id="loanTenure1" value="12" readonly>
-      </div>
-      <div class="form-group">
-        <label>Chọn Hạn mức:</label>
-        <select id="loanLimit1" onchange="onLimitSelectChange(1)" style="font-weight: 600; color: #0284c7;">
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Số tiền hoàn trả gốc món 1:</label>
-        <input type="text" id="principalAmount1" value="" readonly style="background-color: #f8fafc;">
-      </div>
-      <div class="form-group">
-        <label>Số tiền hoàn trả lãi món 1:</label>
-        <input type="text" id="interestAmount1" value="" readonly style="background-color: #f8fafc;">
-      </div>
-      <div class="form-group">
-        <label>Tiết kiệm BB hàng tháng (Món 1):</label>
-        <input type="text" id="savingsAmount1" value="150,000" oninput="calculateRepayment()" placeholder="150,000">
-      </div>
-      <div class="form-group">
-        <label>Tổng hoàn trả gốc lãi món 1 (Gốc + Lãi):</label>
-        <input type="text" id="totalPI1" value="" style="background-color: #f0fdf4; font-weight: bold; color: #15803d;" readonly>
-      </div>
-      <div class="form-group">
-        <label>Tổng hoàn trả món 1 (Gốc + Lãi + TKBB):</label>
-        <input type="text" id="totalPISavings1" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c;" readonly>
+      <div class="qr-result" id="qrResult" style="display: none; margin-top: 0; padding: 15px; text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <img id="qrImage" src="" alt="Mã VietQR" style="max-width: 200px;"><br>
+        <button id="downloadBtn" onclick="downloadQRImage('qrImage', 'loan')" class="btn-download" style="padding: 8px 16px; font-size: 13px; margin-top: 10px;">Tải ảnh QR Tổng Hợp</button>
       </div>
     </div>
-  </div>
 
-  <!-- MÓN VAY THỨ 2 -->
-  <div class="sub-loan-box" id="subLoanBox2">
-    <div class="sub-loan-header">📦 Món vay thứ hai:</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Sản phẩm vay:</label>
-        <select id="loanProduct2" onchange="updateLoanTenure(2)">
-          <option value="12" selected>Sản phẩm 12 tháng</option>
-          <option value="15">Sản phẩm 15 tháng</option>
-          <option value="18">Sản phẩm 18 tháng</option>
-          <option value="24">Sản phẩm 24 tháng</option>
-          <option value="36">Sản phẩm 36 tháng</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Thời hạn vay (tháng):</label>
-        <input type="text" id="loanTenure2" value="12" readonly>
-      </div>
-      <div class="form-group">
-        <label>Chọn Hạn mức:</label>
-        <select id="loanLimit2" onchange="onLimitSelectChange(2)" style="font-weight: 600; color: #0284c7;">
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Số tiền hoàn trả gốc món 2:</label>
-        <input type="text" id="principalAmount2" value="" readonly style="background-color: #f8fafc;">
-      </div>
-      <div class="form-group">
-        <label>Số tiền hoàn trả lãi món 2:</label>
-        <input type="text" id="interestAmount2" value="" readonly style="background-color: #f8fafc;">
-      </div>
-      <div class="form-group">
-        <label>Tổng hoàn trả món 2 (Gốc + Lãi):</label>
-        <input type="text" id="totalPI2" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c;" readonly>
-      </div>
-    </div>
-  </div>
-
-  <!-- MÓN VAY THỨ 3 -->
-  <div class="sub-loan-box" id="subLoanBox3">
-    <div class="sub-loan-header">📦 Món vay thứ ba:</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Sản phẩm vay:</label>
-        <select id="loanProduct3" onchange="updateLoanTenure(3)">
-          <option value="12" selected>Sản phẩm 12 tháng</option>
-          <option value="15">Sản phẩm 15 tháng</option>
-          <option value="18">Sản phẩm 18 tháng</option>
-          <option value="24">Sản phẩm 24 tháng</option>
-          <option value="36">Sản phẩm 36 tháng</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Thời hạn vay (tháng):</label>
-        <input type="text" id="loanTenure3" value="12" readonly>
-      </div>
-      <div class="form-group">
-        <label>Chọn Hạn mức:</label>
-        <select id="loanLimit3" onchange="onLimitSelectChange(3)" style="font-weight: 600; color: #0284c7;">
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Số tiền hoàn trả gốc món 3:</label>
-        <input type="text" id="principalAmount3" value="" readonly style="background-color: #f8fafc;">
-      </div>
-      <div class="form-group">
-        <label>Số tiền hoàn trả lãi món 3:</label>
-        <input type="text" id="interestAmount3" value="" readonly style="background-color: #f8fafc;">
-      </div>
-      <div class="form-group">
-        <label>Tổng hoàn trả món 3 (Gốc + Lãi):</label>
-        <input type="text" id="totalPI3" value="" style="background-color: #fff7ed; font-weight: bold; color: #c2410c;" readonly>
-      </div>
-    </div>
-  </div>
-
-  <!-- TỔNG KẾ HOẠCH TRẢ GỐC LÃI TẤT CẢ CÁC MÓN -->
-  <div style="margin-top: 16px; background: #eff6ff; padding: 16px; border-radius: 8px; border: 1px solid #bfdbfe;">
-    <div class="form-group">
-      <label style="color: #1e3a8a; font-size: 15px;">📊 Tổng số tiền hoàn trả cho tất cả các món (Bao gồm gốc, lãi, TKBB món 1): <span class="required">(*)</span></label>
-      <input type="text" id="totalRepayment" value="" style="background-color: #ffffff; font-weight: bold; color: #1e3a8a; font-size: 16px;" oninput="formatManualTotalRepayment(this)">
-    </div>
-  </div>
-
-  <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 16px;">
-    <div class="form-group">
-      <label style="color: #3b3086; font-size: 14px;">📋 Chọn Dạng Bảng kế hoạch: <span class="required">(*)</span></label>
-      <select id="scheduleFormat" style="border-color: #818cf8; font-weight: 600; background-color: #f5f3ff;">
-        <option value="QUY" selected>Dạng Quỹ (Ban Giám Đốc)</option>
-        <option value="TCVM">Dạng TCVM (Ban Quản Lý)</option>
-      </select>
-    </div>
-
-    <button class="btn-submit" onclick="generateVietQR()">
-      📱 Tạo mã VietQR Tổng Hợp & Hiển thị Bảng Kế Hoạch
-    </button>
-  </div>
-
-  <div class="qr-result" id="qrResult">
-    <h3 style="margin-top:0; color:#1f2937; font-size:16px;">Mã QR Thanh Toán Tổng Hợp VietQR</h3>
-    <img id="qrImage" src="" alt="Mã VietQR"><br>
-    <a id="downloadBtn" href="#" download="VietQR.png" class="btn-download">Tải ảnh QR Tổng Hợp</a>
   </div>
 </div>
-
-<!-- FORM PHỤ (TAB IN QR TK AN SINH) -->
 <!-- FORM PHỤ (TAB IN QR TK AN SINH) -->
 <div class="container" id="anSinhTabContent" style="display: none;">
   <div class="section-title">
@@ -659,49 +689,130 @@
     </div>
     <div class="form-group">
       <label>Nội dung chuyển khoản mẫu An Sinh:</label>
-      <input type="text" id="asTransferMemo" value="[Mã TV] [Họ tên] noptkansinh">
+      <input type="text" id="asTransferMemo" value="[WD][Mã TV][Họ tên]TTAS">
     </div>
   </div>
 
   <div class="section-title">
     👤 Thông tin thành viên:
   </div>
+
+  <!-- BỐ CỤC 2 CỘT: TRÁI LÀ FORM NHẬP (ĐÃ CĂN ĐỀU 100%), PHẢI LÀ KHUNG QR -->
+  <div style="display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 24px; align-items: start;">
+    
+    <!-- CỘT BÊN TRÁI: THÔNG TIN VÀ NÚT BẤM -->
+    <div>
+      <div class="form-grid" style="grid-template-columns: 1fr; gap: 14px;">
+        <div class="form-group">
+          <label>Mã Thành viên: <span class="required">(*)</span></label>
+          <input type="text" id="asMemberId" placeholder="Nhập mã TV" style="background-color: #eff6ff; width: 100%; box-sizing: border-box;" oninput="syncFromAnSinh()">
+        </div>
+        <div class="form-group">
+          <label>Tên thành viên: <span class="required">(*)</span></label>
+          <input type="text" id="asMemberName" placeholder="Nhập họ và tên" style="background-color: #eff6ff; width: 100%; box-sizing: border-box;" oninput="syncFromAnSinh()">
+        </div>
+        <div class="form-group">
+          <label>Chọn Số tiền nộp TK An Sinh: <span class="required">(*)</span></label>
+          <select id="asAmount" style="font-weight: 600; color: #059669; background-color: #ecfdf5; width: 100%; box-sizing: border-box;">
+            <option value="500000">500,000</option>
+            <option value="1000000">1,000,000</option>
+            <option value="1500000">1,500,000</option>
+            <option value="2000000">2,000,000</option>
+            <option value="2500000">2,500,000</option>
+            <option value="3000000" selected>3,000,000</option>
+            <option value="3500000">3,500,000</option>
+            <option value="4000000">4,000,000</option>
+            <option value="4500000">4,500,000</option>
+            <option value="5000000">5,000,000</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button class="btn-submit" style="background-color: #059669; width: auto; padding: 10px 22px; font-size: 14px;" onclick="generateAnSinhVietQR()">
+          📱 Tạo mã VietQR TK An Sinh
+        </button>
+      </div>
+    </div>
+
+    <!-- CỘT BÊN PHẢI: KHUNG HIỂN THỊ MÃ QR -->
+    <div>
+      <div class="qr-result" id="asQrResult" style="display: none; margin-top: 0; padding: 15px;">
+        <h3 style="margin-top:0; color:#1f2937; font-size:14px;">Mã QR Thanh Toán An Sinh</h3>
+        <img id="asQrImage" alt="Mã VietQR An Sinh" style="max-width: 180px;"><br>
+        <button id="asDownloadBtn" onclick="downloadQRImage('asQrImage', 'ansinh')" class="btn-download" style="background-color: #059669; padding: 8px 16px; font-size: 13px;">Tải ảnh QR An Sinh</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- FORM PHỤ (TAB NỘP TKBB 5% ĐỂ VAY VỐN) -->
+<div class="container" id="loan5PercentTabContent" style="display: none;">
+  <div class="section-title">
+    🏦 Cấu hình Ngân hàng 
+  </div>
   <div class="form-grid">
     <div class="form-group">
-      <label>Mã Thành viên: <span class="required">(*)</span></label>
-      <input type="text" id="asMemberId" placeholder="Nhập mã TV" style="background-color: #eff6ff;">
+      <label>Mã Ngân Hàng (VD: Agribank, VietinBank):</label>
+      <input type="text" id="l5BankCode" value="Agribank">
     </div>
     <div class="form-group">
-      <label>Tên thành viên: <span class="required">(*)</span></label>
-      <input type="text" id="asMemberName" placeholder="Nhập họ và tên" style="background-color: #eff6ff;">
+      <label>Số Tài Khoản Nhận Tiền:</label>
+      <select id="l5AccountNo"></select>
     </div>
     <div class="form-group">
-      <label>Chọn Số tiền nộp TK An Sinh: <span class="required">(*)</span></label>
-      <select id="asAmount" style="font-weight: 600; color: #059669; background-color: #ecfdf5;">
-        <option value="500000">500,000</option>
-        <option value="1000000">1,000,000</option>
-        <option value="1500000">1,500,000</option>
-        <option value="2000000">2,000,000</option>
-        <option value="2500000">2,500,000</option>
-        <option value="3000000" selected>3,000,000</option>
-        <option value="3500000">3,500,000</option>
-        <option value="4000000">4,000,000</option>
-        <option value="4500000">4,500,000</option>
-        <option value="5000000">5,000,000</option>
-      </select>
+      <label>Tên Chủ Tài Khoản Thụ Hưởng:</label>
+      <input type="text" id="l5AccountName" value="QUY HO TRO PHU NU PT TINH QUANG TRI">
+    </div>
+    <div class="form-group">
+      <label>Nội dung chuyển khoản:</label>
+      <input type="text" id="l5TransferMemo" value="[WD][Mã TV][Họ tên]TKBB">
     </div>
   </div>
 
-  <div style="margin-top: 24px;">
-    <button class="btn-submit" style="background-color: #059669;" onclick="generateAnSinhVietQR()">
-      📱 Tạo mã VietQR TK An Sinh
-    </button>
+  <div class="section-title">
+    👤 Thông tin thành viên mới:
   </div>
 
-  <div class="qr-result" id="asQrResult">
-    <h3 style="margin-top:0; color:#1f2937; font-size:16px;">Mã QR Thanh Toán An Sinh</h3>
-    <img id="asQrImage" alt="Mã VietQR An Sinh"><br>
-    <a id="asDownloadBtn" href="#" download="VietQR_AnSinh.png" class="btn-download" style="background-color: #059669;">Tải ảnh QR An Sinh</a>
+  <!-- BỐ CỤC 2 CỘT: TRÁI LÀ FORM NHẬP (ĐÃ CĂN ĐỀU 100%), PHẢI LÀ KHUNG QR -->
+  <div style="display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 24px; align-items: start;">
+    
+    <!-- CỘT BÊN TRÁI: THÔNG TIN VÀ NÚT BẤM -->
+    <div>
+      <div class="form-grid" style="grid-template-columns: 1fr; gap: 14px;">
+        <div class="form-group">
+          <label>Mã Thành viên: <span class="required">(*)</span></label>
+          <input type="text" id="l5MemberId" placeholder="Nhập mã TV" style="background-color: #f5f3ff; width: 100%; box-sizing: border-box;" oninput="syncFromLoan5Percent()">
+        </div>
+        <div class="form-group">
+          <label>Tên thành viên: <span class="required">(*)</span></label>
+          <input type="text" id="l5MemberName" placeholder="Nhập họ và tên" style="background-color: #f5f3ff; width: 100%; box-sizing: border-box;" oninput="syncFromLoan5Percent()">
+        </div>
+        <div class="form-group">
+          <label>Nhập số tiền nộp: <span class="required">(*)</span></label>
+          <input type="text" id="l5Amount" value=" " oninput="formatLoan5PercentAmount(this)" placeholder="Nhập số tiền..." style="font-weight: 600; color: #7c3aed; background-color: #f5f3ff; width: 100%; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <button class="btn-submit" style="background-color: #7c3aed; width: auto; padding: 10px 22px; font-size: 14px;" onclick="generateLoan5PercentVietQR()">
+          📱 Tạo mã QR Nộp tiền
+        </button>
+      </div>
+    </div>
+
+    <!-- CỘT BÊN PHẢI: KHUNG HIỂN THỊ MÃ QR -->
+    <div>
+      <div class="qr-result" id="l5QrResult" style="display: none; margin-top: 0; padding: 15px;">
+        <h3 style="margin-top:0; color:#1f2937; font-size:14px;">Mã QR Thanh Toán</h3>
+        <img id="l5QrImage" alt="Mã VietQR" style="max-width: 180px;"><br>
+        <button id="l5DownloadBtn" onclick="downloadQRImage('l5QrImage', 'loan5percent')" class="btn-download" style="background-color: #7c3aed; padding: 8px 16px; font-size: 13px;">Tải ảnh QR</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -899,8 +1010,11 @@
     const selectedPhongKey = document.getElementById("loginPhongSelect").value;
     const accountSelect = document.getElementById("accountNo");
     const asAccountSelect = document.getElementById("asAccountNo");
+    const l5AccountSelect = document.getElementById("l5AccountNo");
+
     accountSelect.innerHTML = "";
     asAccountSelect.innerHTML = "";
+    l5AccountSelect.innerHTML = "";
     
     const accountList = ACCOUNTS_BY_PHONG[selectedPhongKey] || [];
     accountList.forEach(acc => {
@@ -913,32 +1027,53 @@
       opt2.value = acc.value;
       opt2.textContent = acc.label;
       asAccountSelect.appendChild(opt2);
+
+      const opt3 = document.createElement("option");
+      opt3.value = acc.value;
+      opt3.textContent = acc.label;
+      l5AccountSelect.appendChild(opt3);
     });
 
     document.getElementById("loginModal").style.display = "none";
+    populateLimits(1, 12);
+    populateLimits(2, 12);
+    populateLimits(3, 12);
+    calculateRepayment();
   }
 
   function switchTab(tabType) {
     const loanBtn = document.getElementById("tabLoanBtn");
     const anSinhBtn = document.getElementById("tabAnSinhBtn");
+    const loan5PercentBtn = document.getElementById("tabLoan5PercentBtn");
+
     const loanContent = document.getElementById("loanTabContent");
     const anSinhContent = document.getElementById("anSinhTabContent");
+    const loan5PercentContent = document.getElementById("loan5PercentTabContent");
     const allSchedulesContainer = document.getElementById("allSchedulesContainer");
+
+    // Reset hiển thị tất cả về ẩn
+    loanBtn.classList.remove("active");
+    anSinhBtn.classList.remove("active");
+    loan5PercentBtn.classList.remove("active");
+
+    loanContent.style.display = "none";
+    anSinhContent.style.display = "none";
+    loan5PercentContent.style.display = "none";
+    allSchedulesContainer.style.display = "none";
 
     if (tabType === 'loan') {
       loanBtn.classList.add("active");
-      anSinhBtn.classList.remove("active");
       loanContent.style.display = "block";
-      anSinhContent.style.display = "none";
-    } else {
+    } else if (tabType === 'ansinh') {
       anSinhBtn.classList.add("active");
-      loanBtn.classList.remove("active");
-      loanContent.style.display = "none";
       anSinhContent.style.display = "block";
-      allSchedulesContainer.style.display = "none";
-
       document.getElementById("asMemberId").value = document.getElementById("memberId").value;
       document.getElementById("asMemberName").value = document.getElementById("memberName").value;
+    } else if (tabType === 'loan5percent') {
+      loan5PercentBtn.classList.add("active");
+      loan5PercentContent.style.display = "block";
+      document.getElementById("l5MemberId").value = document.getElementById("memberId").value;
+      document.getElementById("l5MemberName").value = document.getElementById("memberName").value;
     }
   }
 
@@ -1039,6 +1174,22 @@
     }
   }
 
+  function formatAnSinhAmount(input) {
+    let valRaw = input.value.replace(/,/g, '');
+    let valNum = parseFloat(valRaw);
+    if (!isNaN(valNum)) {
+      input.value = valNum.toLocaleString('en-US');
+    }
+  }
+
+  function formatLoan5PercentAmount(input) {
+    let valRaw = input.value.replace(/,/g, '');
+    let valNum = parseFloat(valRaw);
+    if (!isNaN(valNum)) {
+      input.value = valNum.toLocaleString('en-US');
+    }
+  }
+
   function generateVietQR() {
     const memberId = document.getElementById("memberId").value.trim();
     const memberName = document.getElementById("memberName").value.trim();
@@ -1064,7 +1215,9 @@
     let totalRaw = document.getElementById("totalRepayment").value.replace(/,/g, '');
     let amount = parseInt(totalRaw) || 0;
 
-    let memo = `${memberId} ${memberName} nopgoclaitk`.trim();
+    let safeMemberName = memberName.toUpperCase().replace(/\s+/g, '');	
+	
+  let memo = `[WD] [${memberId}] [${safeMemberName}] GLTK`.trim();
 
     const payload = {
       accountNo: accountNo,
@@ -1072,8 +1225,10 @@
       acqId: bankBin,
       amount: amount,
       addInfo: memo,
-      template: "compact2"
+      template: "print"
     };
+
+
 
     fetch("https://api.vietqr.io/v2/generate", {
       method: "POST",
@@ -1103,6 +1258,106 @@
       console.error(err);
       alert("Lỗi kết nối tới dịch vụ VietQR!");
     });
+  }
+
+  function generateAnSinhVietQR() {
+    const memberId = document.getElementById("asMemberId").value.trim();
+    const memberName = document.getElementById("asMemberName").value.trim();
+
+    if (!memberId || !memberName) {
+      alert("Vui lòng nhập đầy đủ Mã và Tên thành viên!");
+      return;
+    }
+
+    let bankInput = document.getElementById("asBankCode").value.trim().toLowerCase();
+    let bankBin = bankBins[bankInput] || document.getElementById("asBankCode").value.trim();
+
+    const accountNo = document.getElementById("asAccountNo").value.trim();
+    const accountName = document.getElementById("asAccountName").value.trim();
+    
+    let amountRaw = document.getElementById("asAmount").value.replace(/,/g, '');
+    let amount = parseInt(amountRaw) || 0;
+	
+	 let safeMemberName = memberName.toUpperCase().replace(/\s+/g, '');	
+	
+  let memo = `[WD] [${memberId}] [${safeMemberName}] TTAS`.trim();
+    
+
+    const payload = {
+      accountNo: accountNo,
+      accountName: accountName,
+      acqId: bankBin,
+      amount: amount,
+      addInfo: memo,
+      template: "print"
+    };
+
+    fetch("https://api.vietqr.io/v2/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.code === "00" && data.data && data.data.qrDataURL) {
+        document.getElementById("asQrImage").src = data.data.qrDataURL;
+        document.getElementById("asDownloadBtn").href = data.data.qrDataURL;
+        document.getElementById("asQrResult").style.display = "block";
+      } else {
+        alert("Không thể tạo mã QR An Sinh!");
+      }
+    })
+    .catch(err => console.error(err));
+  }
+
+  function generateLoan5PercentVietQR() {
+    const memberId = document.getElementById("l5MemberId").value.trim();
+    const memberName = document.getElementById("l5MemberName").value.trim();
+
+    if (!memberId || !memberName) {
+      alert("Vui lòng nhập đầy đủ Mã và Tên thành viên!");
+      return;
+    }
+
+    let bankInput = document.getElementById("l5BankCode").value.trim().toLowerCase();
+    let bankBin = bankBins[bankInput] || document.getElementById("l5BankCode").value.trim();
+
+    const accountNo = document.getElementById("l5AccountNo").value.trim();
+    const accountName = document.getElementById("l5AccountName").value.trim();
+    
+    let amountRaw = document.getElementById("l5Amount").value.replace(/,/g, '');
+    let amount = parseInt(amountRaw) || 0;
+	
+	 let safeMemberName = memberName.toUpperCase().replace(/\s+/g, '');	
+	
+  let memo = `[WD] [${memberId}] [${safeMemberName}] TKBB`.trim();
+   
+
+    const payload = {
+      accountNo: accountNo,
+      accountName: accountName,
+      acqId: bankBin,
+      amount: amount,
+      addInfo: memo,
+      template: "print"
+    };
+
+    fetch("https://api.vietqr.io/v2/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.code === "00" && data.data && data.data.qrDataURL) {
+        document.getElementById("l5QrImage").src = data.data.qrDataURL;
+        document.getElementById("l5DownloadBtn").href = data.data.qrDataURL;
+        document.getElementById("l5QrResult").style.display = "block";
+      } else {
+        alert("Không thể tạo mã QR TKBB 5%!");
+      }
+    })
+    .catch(err => console.error(err));
   }
 
   function renderAllSchedules(qrDataURL) {
@@ -1150,8 +1405,8 @@
       scheduleDiv.style.display = "block";
       scheduleDiv.innerHTML = `
         <div class="schedule-header-layout">
-          <div class="schedule-header-title">
-            <h2 class="schedule-title">BẢNG TÍNH KẾ HOẠCH TRẢ NỢ (MÓN VAY THỨ ${i})</h2>
+          <div class="schedule-header-title"><br>
+            <h2 class="schedule-title">BẢNG TÍNH KẾ HOẠCH TRẢ NỢ THEO GỐC VÀ LÃI VAY</h2>
             <p class="schedule-subtitle">${hdtdText}</p>
           </div>
           <div class="schedule-header-qr">
@@ -1211,83 +1466,79 @@
     printDiv.innerHTML = `<button class="btn-print" onclick="window.print()">🖨️ In Tất Cả Bảng Kế Hoạch (A4)</button>`;
     container.appendChild(printDiv);
   }
-
-  function generateAnSinhVietQR() {
-    const memberId = document.getElementById("asMemberId").value.trim();
-    const memberName = document.getElementById("asMemberName").value.trim();
-    const amountSelect = document.getElementById("asAmount");
-    const amount = parseInt(amountSelect.value) || 0;
-
-    if (!memberId) {
-      alert("Vui lòng nhập Mã Thành viên trước khi tạo mã QR An Sinh!");
-      document.getElementById("asMemberId").focus();
+  
+  // Hàm tải ảnh thông minh tự động gán tên file theo Mã và Tên thành viên
+  // Hàm tải ảnh mở hộp thoại chọn thư mục lưu (Save As)
+  async function downloadQRImage(imgId, prefixType) {
+    const imgElement = document.getElementById(imgId);
+    if (!imgElement || !imgElement.src) {
+      alert("Chưa có mã QR để tải xuống!");
       return;
     }
 
-    if (!memberName) {
-      alert("Vui lòng nhập Tên thành viên trước khi tạo mã QR An Sinh!");
-      document.getElementById("asMemberName").focus();
-      return;
+    let mId = "";
+    let mName = "";
+
+    if (prefixType === 'loan') {
+      mId = document.getElementById("memberId").value.trim();
+      mName = document.getElementById("memberName").value.trim();
+    } else if (prefixType === 'ansinh') {
+      mId = document.getElementById("asMemberId").value.trim();
+      mName = document.getElementById("asMemberName").value.trim();
+    } else if (prefixType === 'loan5percent') { // <-- Thêm đoạn này để bắt dữ liệu tab TKBB 5%
+      mId = document.getElementById("l5MemberId").value.trim();
+      mName = document.getElementById("l5MemberName").value.trim();
     }
 
-    if (amount <= 0) {
-      alert("Vui lòng chọn Số tiền nộp TK An Sinh!");
-      amountSelect.focus();
-      return;
+
+    if (!mId || !mName) {
+      mId = mId || "MaTV";
+      mName = mName || "ThanhVien";
     }
 
-    let bankInput = document.getElementById("asBankCode").value.trim().toLowerCase();
-    let bankBin = bankBins[bankInput] || document.getElementById("asBankCode").value.trim();
+    let safeName = mName.replace(/\s+/g, '');
+    let fileName = `${mId}_${safeName}.png`;
 
-    const accountNo = document.getElementById("asAccountNo").value.trim();
-    const accountName = document.getElementById("asAccountName").value.trim();
-    
-    let memo = `${memberId} ${memberName} noptkansinh`.trim();
+    try {
+      // Lấy dữ liệu ảnh dưới dạng Blob
+      const response = await fetch(imgElement.src);
+      const blob = await response.blob();
 
-    const payload = {
-      accountNo: accountNo,
-      accountName: accountName,
-      acqId: bankBin,
-      amount: amount,
-      addInfo: memo,
-      template: "compact2"
-    };
-
-    fetch("https://api.vietqr.io/v2/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.code === "00" && data.data && data.data.qrDataURL) {
-        const qrImg = document.getElementById("asQrImage");
-        const downloadBtn = document.getElementById("asDownloadBtn");
-        const qrResult = document.getElementById("asQrResult");
-
-        qrImg.src = data.data.qrDataURL;
-        downloadBtn.href = data.data.qrDataURL;
-        
-        let safeName = memberName.replace(/\s+/g, '');
-        downloadBtn.download = `${memberId}_${safeName}.png`;
-        qrResult.style.display = "block";
+      // Kiểm tra trình duyệt có hỗ trợ hộp thoại chọn thư mục (Show Save File Picker) hay không
+      if (window.showSaveFilePicker) {
+        const options = {
+          suggestedName: fileName,
+          types: [{
+            description: 'PNG Image',
+            accept: { 'image/png': ['.png'] },
+          }],
+        };
+        const handle = await window.showSaveFilePicker(options);
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
       } else {
-        alert("Không thể tạo mã QR An Sinh. Vui lòng kiểm tra lại thông tin!");
+        // Fallback tự động tải về thư mục mặc định nếu trình duyệt không hỗ trợ
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
       }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Lỗi kết nối tới dịch vụ VietQR!");
-    });
+    } catch (err) {
+      // Bắt lỗi nếu người dùng bấm nút Hủy (Cancel) chọn thư mục
+      if (err.name !== 'AbortError') {
+        console.error(err);
+        alert("Không thể lưu ảnh!");
+      }
+    }
   }
-  window.onload = function() {
-    document.getElementById("loginModal").style.display = "flex";
-    populateLimits(1, 12);
-    populateLimits(2, 12);
-    populateLimits(3, 12);
-    calculateRepayment();
-  };
   
 </script>
+
 </body>
 </html>
